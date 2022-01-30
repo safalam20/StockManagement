@@ -1,0 +1,40 @@
+﻿<!-- The Modal -->
+<div id="myModal" class="dltmodal">
+
+
+    <!-- Modal content -->
+    <div class="dltmodal-content">
+        <h3 class="text-center">Sure to Reset?</h3>
+
+        <br/>
+        <div class="row text-center">
+            <div class="col">
+                <button type="button" class="btn btn-secondary px-4" @onclick="CancelClick">Cancel</button>
+            </div>
+            <div class="col">
+                <button type="button" class="btn btn-danger px-4" @onclick="DeleteClick">Delete</button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+
+    [Parameter]
+    public EventCallback<bool> ECancelDelete { get; set; }
+
+
+    async Task CancelClick()
+    {
+        await ECancelDelete.InvokeAsync(false);
+    }
+
+    async Task DeleteClick()
+    {
+        await ECancelDelete.InvokeAsync(true);
+    }
+
+}

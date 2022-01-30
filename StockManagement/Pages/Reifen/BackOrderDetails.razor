@@ -1,0 +1,88 @@
+﻿@if (ready)
+{
+    <!-- The Modal -->
+    <div class="modaltransit">
+        <br />
+        <!-- Modal content -->
+        <div class="modal-contenttransit">
+            <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+            <br />
+            <div class="m-5">
+                <table class="table infotable" style="white-space:nowrap; font-size:90%;">
+
+                    <thead>
+                        <tr>
+                           <th>Matchcode</th>
+                            <th>Lieferant</th>
+                            <th>Belegnummer</th>
+                            <th>BestellDatum</th>
+                            <th>VorID</th>
+                            <th>Artikelnummer</th>
+                            <th>Total Order</th>
+                            <th>Total Delivered</th>
+                            <th>BackOrder</th>
+                            @if (isEkAuthenticated)
+                {
+                        <th>Price</th>
+                }
+                            
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (StefanBackOrder st in ListBackOrders)
+                        {
+                        <tr>
+                            <td>@st.Matchcode</td>
+                            <td>@st.Lieferant</td>
+                            <td>@st.Belegnummer</td>
+                            <td>@st.BestellDatum</td>
+                            <td>@st.VorID</td>
+                            <td>@st.Artikelnummer</td>
+                            <td>@String.Format("{0,0:N0}", st.TotalOrder)</td>
+                            <td>@String.Format("{0,0:N0}", st.TotalDelivered)</td>
+                            <td>@String.Format("{0,0:N0}", st.BackOrder)</td>
+                            @if (isEkAuthenticated)
+                    {
+                        <td>@String.Format("{0,0:N2}", st.MaxPriceInBestellung)</td>
+                    }
+                            
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+
+        </div>
+
+    </div>
+
+}
+
+
+@code {
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+    [Parameter]
+    public List<StefanBackOrder> ListBackOrders { get; set; }
+    private bool ready = false;
+
+    [Parameter]
+    public bool isEkAuthenticated { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        ready = true;
+    }
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+
+
+
+}

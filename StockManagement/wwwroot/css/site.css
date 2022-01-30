@@ -1,0 +1,450 @@
+@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+a, .btn-link {
+    color: #0366d6;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.content {
+    padding-top: 1.1rem;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid red;
+}
+
+.validation-message {
+    color: red;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+
+.wrapper {
+    /*border: 1px solid #ddd;*/
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.LastEkWrapper {
+    width: 100%;
+    max-height: 320px;
+    overflow-y: auto;
+}
+.SameSizeWrapper {
+    width: 100%;
+    max-height: 270px;
+    overflow-y: auto;
+}
+.patternwrapper {
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+
+.costform {
+    width: 100%;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.table td, .table th {
+    padding: 0.35rem;
+    vertical-align: middle;
+    border-top: 1px solid #dee2e6;
+   
+}
+.mytable th, .mytable td{
+
+}
+
+.stickhead {
+    position: -webkit-sticky;
+    background: #eeeee4;
+    position: sticky;
+    top: 0;
+    padding: .40rem;
+}
+.homebuttons {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%);
+}
+
+.bottomsticky {
+    background: #eeeee4;
+    position: sticky;
+    bottom: 0px;
+    padding: 0;
+    margin:0;
+}
+
+
+.selectedRow {
+    background-color: #03fcdb !important;
+    font-weight: bold !important;
+}
+.explanation th{
+    vertical-align:middle !important;
+    text-align:center !important;
+}
+
+/* The Modal (background) */
+.addmodal {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: #e3f2fd; /* Fallback color */
+    background-color: #e3f2fd; /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.addmodal-content {
+    background-color: gold;
+    margin: 5% auto; /* 15% from the top and centered */
+    padding: 10px;
+    border: 1px solid #888;
+    width: 25%; /* Could be more or less, depending on screen size */
+    font-style: italic;
+}
+/* Modal Content/Box */
+.invoice-content {
+    background-color: floralwhite;
+    margin: 5% auto; /* 15% from the top and centered */
+    padding: 10px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    font-style: italic;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* The Modal (background) */
+.modal {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    -webkit-animation-name: fadeIn;  /*Fade in the background */
+    -webkit-animation-duration: 0.4s;
+    animation-name: fadeIn;
+    animation-duration: 0.4s
+}
+
+/* Modal Content */
+.modal-content {
+    position: fixed;
+    margin: 2% auto; /* 15% from the top and centered */
+    background-color: #fefefe;
+    width: 100%;
+    /*-webkit-animation-name: slideIn;
+    -webkit-animation-duration: 0.4s;
+    animation-name: slideIn;
+    animation-duration: 0.4s*/
+}
+
+/* The Modal (background) */
+.modalinfo {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-contentinfo {
+    position: fixed;
+    margin: 5% 20%; /* 15% from the top and centered */
+    background-color: aqua;
+    width: 60%;
+    border: 1px solid #888;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+/* The Modal (background) */
+.modalfeatures {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-contentfeatures {
+    position: fixed;
+    margin: 5% 25%; /* 15% from the top and centered */
+    background-color:aliceblue;
+    width: 50%;
+    border: 1px solid #888;
+    color:black;
+    font-weight:bold;
+}
+
+/* The Modal (background) */
+.modalfilter {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-contentfilter {
+    position: fixed;
+    margin: 5% 37%; /* 15% from the top and centered */
+    background-color: gold;
+    width: 26%;
+    border: 1px solid #888;
+    color: black;
+    font-weight: bold;
+}
+
+
+
+.featurebutton{
+    min-width:200px !important;
+    font-weight:bold;
+}
+/* The Modal (background) */
+.modaltransit {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-contenttransit {
+    position: fixed;
+    margin-top:5%;
+    margin-left:30%;
+    background-color:antiquewhite;
+    width: 60%;
+    border: 1px solid #888;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+/* The Modal (background) */
+.modalseecontainer {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-contentseecontainer {
+    position: fixed;
+    margin-top: 3%;
+    margin-left: 1%;
+    background-color:khaki;
+    width: 98%;
+    border: 1px solid #888;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+
+
+.topright {
+    position: absolute;
+    top: 15px;
+    right: 30px;
+}
+
+.saveButton {
+    position: absolute;
+    top: 145px;
+    right: 20px;
+}
+
+.modalform {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: #e3f2fd; /* Fallback color */
+    background-color: #e3f2fd; /* Black w/ opacity */
+}
+
+.costtable th, .costtable td{
+    text-align:center;
+    vertical-align:middle !important;
+    font-weight:bold;
+}
+
+.infotable th, .infotable td{
+    border-style:none;
+    font-weight:bold;
+}
+.infotable th{
+    color:red;
+}
+
+.dltmodal {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/*Delete Modal*/
+
+/* The Modal (background) */
+.dltmodal {
+    display: block; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.dltmodal-content {
+    background-color: gold;
+    margin: 20% auto; /* 15% from the top and centered */
+    padding: 10px;
+    border: 1px solid #888;
+    width: 25%; /* Could be more or less, depending on screen size */
+    font-style: italic;
+}
+
+/* Add Animation */
+@-webkit-keyframes slideIn {
+    from {
+        top: -300px;
+        opacity: 0
+    }
+
+    to {
+        top: 0;
+        opacity: 1
+    }
+}
+
+@keyframes slideIn {
+    from {
+        top: -300px;
+        opacity: 0
+    }
+
+    to {
+        top: 0;
+        opacity: 1
+    }
+}
+
+@-webkit-keyframes fadeIn {
+    from {
+        opacity: 0
+    }
+
+    to {
+        opacity: 1
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0
+    }
+
+    to {
+        opacity: 1
+    }
+}

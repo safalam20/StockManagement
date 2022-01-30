@@ -1,0 +1,420 @@
+﻿@inject ISaleRepository repo
+@inject ExportExcelService exportService
+@inject NavigationManager MyNavigationManager
+<!-- The Modal -->
+<div id="myModal" class="addmodal">
+    <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+
+
+    @if (searchMode)
+    {
+        <!-- Modal content -->
+        <div class="addmodal-content">
+            <EditForm Model="@searchBestellung">
+
+                <div class="form-group row m-1">
+                    <label class="col-sm-5 col-form-label col-form-label- font-weight-bold">Lieferant</label>
+                    <div class="col-sm-7">
+                        <InputSelect @bind-Value="@searchBestellung.Lieferant" class="form-control form-control-sm">
+
+                            <option value="Select">--Select--</option>
+                            @foreach (string l in LieferantsFromBestellung)
+                                {
+                                <option value=@l>@l</option>
+                                }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="form-group row m-1">
+                    <label class="col-sm-5 col-form-label col-form-label- font-weight-bold">Vor ID</label>
+                    <div class="col-sm-7">
+                        <InputSelect @bind-Value="@searchBestellung.VorID" class="form-control form-control-sm">
+
+                            <option value="Select">--Select--</option>
+                            @foreach (string l in GetVorgangIDs())
+                                {
+                                <option value=@l>@l</option>
+                                }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <button class="btn btn-info ml-3" type="button" @onclick="SearchBestellung">
+                    LOS
+                </button>
+
+            </EditForm>
+        </div>
+    }
+
+    @if (InvoiceMode)
+    {
+
+        <div class="row mt-5">
+
+            <div class="col-2"></div>
+            <div class="col-auto" style="font-weight:bold; font-size:120%;">
+                <p>Total Qty:</p>
+            </div>
+            <div class="col-1" style="font-weight:bold; font-size:120%;">
+                @String.Format("{0,0:N0}", GetTotalQuantity())
+            </div>
+            <div class="col-auto" style="font-weight:bold; font-size:120%;">
+                <p>Total Amount:</p>
+            </div>
+            <div class="col-1" style="font-weight:bold; font-size:120%;">
+                @String.Format("{0,0:N2}", GetTotalMoney())
+            </div>
+            <div class="col-1"></div>
+            <div class="col-2">
+                <button type="button" class="btn btn-info" @onclick="FinishAndExport">Finish & Export</button>
+            </div>
+            <div class="col-1"></div>
+        </div>
+        <br />
+        <EditForm Model="@AngabenForm">
+            <div class="row" style="margin-left:270px;">
+                
+                    <label class="col-auto col-form-label col-form-label- font-weight-bold my-auto">Invoice No</label>
+                    <div class="col-auto my-auto">
+                        <InputText @bind-Value="@AngabenForm.InvoiceNo" class="form-control form-control-sm" placeholder="Invoice No" />
+                    </div>
+                    <label class="col-auto col-form-label col-form-label- font-weight-bold my-auto">Reference No</label>
+                    <div class="col-auto my-auto">
+                        <InputText @bind-Value="@AngabenForm.ReferenceNo" class="form-control form-control-sm" placeholder="Reference No" />
+                    </div>
+
+                    <label class="col-auto col-form-label col-form-label- font-weight-bold my-auto">BL No</label>
+                    <div class="col-auto my-auto">
+                        <InputText @bind-Value="@AngabenForm.BLno" class="form-control form-control-sm" placeholder="BL No" />
+                    </div>
+               
+            </div>
+        </EditForm>
+        
+
+        <!-- Modal content -->
+        <div class="invoice-content">
+            <EditForm Model="InvoiceForm">
+                <table class="table table-borderless">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Artikelnummer</th>
+                            <th>Menge</th>
+                            <th>Price</th>
+                            <th>Amount</th>
+                            <th></th>
+                            <th></th>
+                            <th>Total Order</th>
+                            <th>Back Order</th>
+                            <th>Einzelpreis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (InvoiceFormDTO bt in InvoiceForm)
+                        {
+                            @if ((InvoiceForm.IndexOf(bt) + 1) < ArtikelInInvoice)
+                            {
+                                <tr>
+                                    <td style="width:50px;">@(InvoiceForm.IndexOf(bt)+1)</td>
+                                    <td style="width:250px;"><InputText @bind-Value="@bt.Artikelnummer" class="form-control form-control-sm" placeholder="Artikelnummer" /></td>
+                                    <td style="width:100px;"><InputNumber @bind-Value="@bt.Menge" class="form-control form-control-sm" placeholder="Menge" /></td>
+                                    <td style="width:100px;"><InputNumber @bind-Value="@bt.Price" class="form-control form-control-sm" placeholder="Price" /></td>
+                                    <td style="width:100px;">@bt.Amount</td>
+                                    @if (bt.Artikelnummer == null)
+                                    {
+                                        <td></td>
+                                    }
+                                    else if (CheckEntry(bt))
+                                    {
+                                        <td><MudIcon Icon="@Icons.Material.Filled.CheckCircle" Title="OK" Size="Size.Large" Style="color:green;" /></td>
+                                    }
+                                    else
+                                    {
+                                        <td><MudIcon Icon="@Icons.Material.Filled.Error" Title="Error" Size="Size.Large" Style="color:red;" /></td>
+                                    }
+                                    <td>@bt.Status</td>
+                                    @if (bt.Artikelnummer != null && GetBestellungByArtikel(bt) != null)
+                                    {
+                                        <td>@String.Format("{0,0:N0}", @GetBestellungByArtikel(bt).TotalOrder)</td>
+                                        <td>@String.Format("{0,0:N0}", @GetBestellungByArtikel(bt).BackOrder)</td>
+                                        <td>@String.Format("{0,0:N2}", @GetBestellungByArtikel(bt).Einzelpreis)</td>
+                                    }
+
+                                </tr>
+                            }
+
+
+                        }
+                    </tbody>
+                </table>
+                @*@foreach (InvoiceFormDTO bt in InvoiceForm)
+                    {
+                        @if ((InvoiceForm.IndexOf(bt) + 1) < ArtikelInInvoice)
+                        {
+                            <div class="form-group row m-1">
+                                <div class="col-sm-1 my-auto" style="font-weight:bold;">
+                                    @(InvoiceForm.IndexOf(bt)+1)
+                                </div>
+                                <label class="col-auto col-form-label col-form-label- font-weight-bold my-auto">Artikelnummer</label>
+                                <div class="col-auto my-auto">
+                                    <InputText @bind-Value="@bt.Artikelnummer" class="form-control form-control-sm" placeholder="Artikelnummer" />
+                                </div>
+                                <label class="col-auto col-form-label col-form-label- font-weight-bold my-auto">Menge</label>
+                                <div class="col-sm-1 my-auto">
+                                    <InputNumber @bind-Value="@bt.Menge" class="form-control form-control-sm" placeholder="Menge" />
+                                </div>
+                                <label class="col-auto col-form-label col-form-label- font-weight-bold my-auto">Price</label>
+                                <div class="col-sm-1 my-auto">
+                                    <InputNumber @bind-Value="@bt.Price" class="form-control form-control-sm" placeholder="Price" />
+                                </div>
+                                <div class="col-sm-1 my-auto">
+                                    <InputNumber @bind-Value="@bt.Amount" class="form-control form-control-sm" placeholder="Amount" readonly />
+                                </div>
+
+                                @if (bt.Artikelnummer != null && GetBestellungByArtikel(bt) == null)
+                                {
+                                    <div class="col-sm-2 mt-2">
+                                        <p style="color:red;font-weight:bold;">Can't find Artikelnummer</p>
+                                    </div>
+                                }
+                                else if (bt.Artikelnummer != null && GetBestellungByArtikel(bt) != null && CheckInvoiceAngaben(bt) == "Not complete")
+                                {
+                                    <div class="col-sm-2 mt-2">
+                                        <p style="color:red;font-weight:bold;">Enter quantity and price</p>
+                                    </div>
+                                }
+                                else if (bt.Artikelnummer != null && GetBestellungByArtikel(bt) != null)
+                                {
+                                    <div class="col-sm-2 mt-2">
+                                        <table class="table table-borderless" style="font-weight:bold;">
+                                            <tr>
+                                                @if (CheckInvoiceAngaben(bt) == "OK")
+                                                {
+                                                    <td><MudIcon Icon="@Icons.Material.Filled.CheckCircle" Title="OK" Size="Size.Large" Style="color:green;" /></td>
+                                                }
+                                                else if (CheckInvoiceAngaben(bt) == "Different")
+                                                {
+                                                    <td><MudIcon Icon="@Icons.Material.Filled.Error" Title="Error" Size="Size.Large" Style="color:red;" /></td>
+                                                }
+
+                                                <td>@String.Format("{0,0:N0}", @GetBestellungByArtikel(bt).TotalOrder)</td>
+                                                <td>@String.Format("{0,0:N0}", @GetBestellungByArtikel(bt).BackOrder)</td>
+                                                <td>@String.Format("{0,0:N2}", @GetBestellungByArtikel(bt).Einzelpreis)</td>
+                                            </tr>
+                                        </table>
+
+                                    </div>
+                                }
+
+
+                            </div>
+
+                        }
+
+                    }*@
+            </EditForm>
+        </div>
+
+
+
+    }
+
+</div>
+
+@code {
+    SearchBestellungDTO searchBestellung = new SearchBestellungDTO();
+    List<InvoiceFormDTO> InvoiceForm = new List<InvoiceFormDTO>();
+    InvoiceAngaben AngabenForm = new InvoiceAngaben();
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+    [Parameter]
+    public List<StefanBackOrder> ListBackOrderDetails { get; set; }
+    private List<string> LieferantsFromBestellung { get; set; }
+    private List<BestellungPositionPrice> FilteredBestellung { get; set; }
+    private List<BestellungPositionPrice> GetBestellungWithPrices { get; set; }
+    private bool searchMode = false;
+    private bool ListViewMode = false;
+    private bool InvoiceMode = false;
+    private int ArtikelInInvoice = 10;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        GetBestellungWithPrices = await repo.GetBestellungWithPrices();
+        LieferantsFromBestellung = GetBestellungWithPrices.Select(x => x.Lieferant).Distinct().ToList();
+
+        GetBestellungWithPrices.ForEach(x => GetBackOrder(x));
+
+        for (int i = 0; i < 100; i++)
+        {
+            InvoiceForm.Add(new InvoiceFormDTO());
+        }
+        searchMode = true;
+    }
+    private List<string> GetVorgangIDs()
+    {
+        List<string> toReturn = GetBestellungWithPrices
+            .Where(x => x.Lieferant == searchBestellung.Lieferant)
+            .Select(x => x.VorID.ToString())
+            .Distinct()
+            .ToList();
+
+        return toReturn;
+
+    }
+    private void SearchBestellung()
+    {
+        FilteredBestellung = GetBestellungWithPrices
+            .Where(x => x.Lieferant == searchBestellung.Lieferant && x.VorID.ToString() == searchBestellung.VorID)
+            .ToList();
+
+        searchMode = false;
+        InvoiceMode = true;
+    }
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+    private void GetBackOrder(BestellungPositionPrice dto)
+    {
+        decimal? BackOrder = ListBackOrderDetails
+            .Where(x => x.Lieferant == dto.Lieferant && x.VorID == dto.VorID && x.Artikelnummer == dto.Artikelnummer)
+            .Select(x => x.BackOrder ?? 0)
+            .ToList()
+            .FirstOrDefault();
+
+        if (BackOrder != null && BackOrder != 0)
+        {
+            dto.BackOrder = (int)BackOrder;
+        }
+        else { dto.BackOrder = 0; }
+    }
+    private BestellungPositionPrice GetBestellungByArtikel(InvoiceFormDTO dto)
+    {
+        AddNewLines();
+
+        return FilteredBestellung
+        .FirstOrDefault(x => x.Artikelnummer == dto.Artikelnummer);
+    }
+    private string CheckInvoiceAngaben(InvoiceFormDTO dto)
+    {
+        if (dto.Menge == null || dto.Price == null)
+        {
+            dto.Status = "Not complete";
+            return "Not complete";
+        }
+
+        BestellungPositionPrice check = GetBestellungByArtikel(dto);
+        if (dto.Menge <= check.BackOrder && dto.Price <= check.Einzelpreis)
+        {
+            dto.Status = "OK";
+            return "OK";
+        }
+        else if (dto.Menge > check.BackOrder || dto.Price > check.Einzelpreis)
+        {
+            dto.Status = "Different";
+            return "Different";
+        }
+
+        return "";
+    }
+    private void AddNewLines()
+    {
+        int count = 0;
+
+        foreach (InvoiceFormDTO dto in InvoiceForm)
+        {
+            if (dto.Artikelnummer != null)
+            {
+                count++;
+            }
+        }
+        if (count + 2 >= ArtikelInInvoice)
+        {
+            ArtikelInInvoice = ArtikelInInvoice + 5;
+        }
+
+    }
+    private void FinishAndExport()
+    {
+        ExportExcel();
+    }
+    private int GetTotalQuantity()
+    {
+        int total = 0;
+
+        foreach (InvoiceFormDTO dto in InvoiceForm)
+        {
+            if (dto.Artikelnummer != null && dto.Menge != null && dto.Price != null)
+            {
+                total = total + (int)dto.Menge;
+            }
+        }
+        return total;
+    }
+    private decimal GetTotalMoney()
+    {
+        decimal total = 0;
+
+        foreach (InvoiceFormDTO dto in InvoiceForm)
+        {
+            if (dto.Artikelnummer != null && dto.Menge != null && dto.Price != null)
+            {
+                total = total + (int)dto.Menge * (decimal)dto.Price;
+            }
+        }
+        return total;
+    }
+    private void ExportExcel()
+    {
+        AngabenForm.Lieferant = searchBestellung.Lieferant;
+        AngabenForm.VorgangID = searchBestellung.VorID;
+
+        exportService.exportInvoiceCheck(FilteredBestellung, InvoiceForm,AngabenForm);
+
+        MyNavigationManager.NavigateTo("api/DownloadInvoice", true);
+
+    }
+    private bool CheckEntry(InvoiceFormDTO dto)
+    {
+        if (dto.Artikelnummer != null && GetBestellungByArtikel(dto) == null)
+        {
+            dto.Status = "Artikel doesn't exist";
+            return false;
+        }
+        if (dto.Menge == null || dto.Price == null)
+        {
+            dto.Status = "Enter Menge and Price";
+            return false;
+        }
+        BestellungPositionPrice check = GetBestellungByArtikel(dto);
+        if (dto.Menge >= check.BackOrder || dto.Price != check.Einzelpreis)
+        {
+            if(dto.Menge >= check.BackOrder && dto.Price == check.Einzelpreis)
+            {
+                dto.Status = "Check Menge";
+            }
+            else if(dto.Menge <= check.BackOrder && dto.Price != check.Einzelpreis)
+            {
+                dto.Status = "Check Price";
+            }
+            else if(dto.Menge >= check.BackOrder && dto.Price != check.Einzelpreis)
+            {
+                dto.Status = "Check Menge and Price";
+            }
+
+
+            return false;
+        }
+
+        dto.Status = "OK";
+        return true;
+
+    }
+
+    
+}

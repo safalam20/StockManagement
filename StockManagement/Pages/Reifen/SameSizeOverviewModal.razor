@@ -1,0 +1,91 @@
+﻿@if (ready)
+{
+    <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger p-0"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+    <br />
+    <br />
+
+    <div class="LastEkWrapper">
+
+        <div class="col-7" style="margin:0 auto;">
+            <table class="table table-bordered" style="font-size:85%;">
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>Size</th>
+                        <th>Frankenthal Stock</th>
+                        <th>On the Way</th>
+                        <th>Back Order</th>
+                        <th>Sale This Year</th>
+                        <th>Sale Last Year</th>
+                        <th>EK</th>
+                        <th>Price/Kg</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (ArtikelData dto in SameSizeList)
+                    {
+                        <tr style="@(dto.USER_Produktionsgruppe==SelectedArtikelCode ? "background-color:green; font-weight:bold; color:white;"  : "")">
+                            <td>@dto.USER_ArtikelName</td>
+                            <td>@dto._Size</td>
+                            <td>@String.Format("{0,0:N0}",dto.Bestand)</td>
+                            <td>@dto.TransitStock</td>
+                            <td>@dto.BackOrder</td>
+                            <td>@String.Format("{0,0:N0}", dto.Sum0 ?? 0)</td>
+                            <td>@String.Format("{0,0:N0}", dto.Sum1 ?? 0)</td>
+                            <td>@String.Format("{0,0:N2}", dto.MaxEK ?? 0)</td>
+                            <td>@GetPriceKG(dto)</td>
+                        </tr>
+                    }
+
+                </tbody>
+            </table>
+            </div>
+        </div>
+            }
+
+            @code {
+
+                [Parameter]
+                public List<ArtikelData> SameSizeList { get; set; }
+
+                [Parameter]
+                public string SelectedArtikelCode { get; set; }
+
+                [Parameter]
+                public EventCallback<bool> CloseDialog { get; set; }
+
+                private bool ready = false;
+
+
+                protected override void OnParametersSet()
+                {
+                    SameSizeList = SameSizeList.OrderByDescending(x => x.Sum0).ToList();
+
+                    ready = true;
+                }
+
+
+                private async Task closeDialog()
+                {
+                    await CloseDialog.InvokeAsync(false);
+                }
+                private string GetPriceKG(ArtikelData dto)
+                {
+                    if (dto.MaxEK != null && dto.MaxEK != 0 && dto.Gewicht != null && dto.Gewicht != 0)
+                    {
+                        return String.Format("{0,0:N2}", (decimal)dto.MaxEK / (decimal)dto.Gewicht);
+                    }
+                    else
+                    {
+                        return null;
+                    }
+
+                }
+
+
+
+
+
+
+            }

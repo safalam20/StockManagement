@@ -1,0 +1,55 @@
+﻿@if (ready)
+{
+    <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger p-0"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+    <br />
+    <br />
+
+    <div class="LastEkWrapper">
+
+        <div class="col-4" style="margin:0 auto;">
+            <table class="table table-bordered" style="font-size:85%;">
+                <thead>
+                    <tr>
+                        <th>Lieferant</th>
+                        <th>Price ($)</th>
+                        
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (ArtikelLieferantDTO dto in Artikel.Lieferants)
+                    {
+                        <tr>
+                            <td>@dto.Lieferant</td>
+                            <td>@String.Format("{0,0:N2}",dto.Einzelpreis)</td>                        
+                        </tr>
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public ArtikelData Artikel { get; set; }
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+    private bool ready = false;
+
+
+    protected override void OnParametersSet()
+    {
+
+        ready = true;
+    }
+
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+
+}

@@ -1,0 +1,154 @@
+﻿@inject ISaleRepository repo
+
+@if (ready)
+{
+    <!-- The Modal -->
+    <div class="modalseecontainer">
+        <br />
+        <!-- Modal content -->
+        <div class="modal-contentseecontainer">
+            <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+            <br/>
+
+            <div class="m-5">
+                <table class="table table-hover table-bordered" style="white-space:nowrap; font-size:85%; font-weight:bold; border-style:none;">
+
+                    <thead style="color:red;">
+                        <tr>
+                            <th>Belegart</th>
+                            <th>Container</th>
+                            <th>Lieferant</th>
+                            <th>BL Nummer</th>
+                            <th>Referenznummer</th>
+                            <th>Rechnungsnummer</th>
+                            <th>Spedition</th>
+                            <th>Menge</th>
+                            <th>ETD</th>
+                            <th>ETA</th>
+                            @if (isEkAuthenticated)
+                            {
+                                <th>Betrag ($)</th>
+                                <th>Bezahlt ($)</th>
+                            }
+
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (WarenEingangData wd in ListSeeContainers)
+                        {
+                        <tr>
+                            <td>@wd.Belegart</td>
+                            <td>@wd.Referenznummer</td>
+                            <td>@wd.A0Name1</td>
+                            <td>@wd.BLNummer</td>
+                            <td>@wd.USER_Referenznummer</td>
+                            <td>@wd.USER_Rechnungsnummer</td>
+                            <td>@wd.USER_Spedition</td>
+                            <td>@wd.TotalMenge</td>
+                            <td>@GetETD(wd)</td>
+                            <td>@GetETA(wd)</td>
+                            @if (isEkAuthenticated)
+                            {
+                                <td>@String.Format("{0,0:N2}", wd.KHKOpUbersicht.Betrag)</td>
+                                <td>@String.Format("{0,0:N2}", wd.KHKOpUbersicht.BezahltBetrag)</td>
+                            }
+
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+
+        </div>
+
+    </div>
+
+}
+
+
+@code {
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+    [Parameter]
+    public List<WarenEingangData> ListSeeContainers { get; set; }
+    private bool ready = false;
+    public List<KHKOpUbersicht> ListUnterwegsOp{ get; set; }
+    private string whereInQuery{get;set;}
+
+    [Parameter]
+    public bool isEkAuthenticated { get; set; }
+    protected override async Task OnParametersSetAsync()
+    {
+        ListSeeContainers = ListSeeContainers.OrderBy(x => x.USER_ETA).ToList();
+
+        whereInQuery = "";
+        foreach(WarenEingangData wd in ListSeeContainers)
+        {
+
+            whereInQuery = whereInQuery + "'" + wd.USER_Rechnungsnummer + "'";
+
+            if (wd != ListSeeContainers.LastOrDefault())
+            {
+                whereInQuery = whereInQuery + ",";
+            }
+        }
+        if(whereInQuery!=""){
+            ListUnterwegsOp = await repo.GetKhkOpUbersichtUnterwegs(whereInQuery);
+        }
+        LoadWithOpInfo();
+
+        ready = true;
+    }
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+
+    private string GetETA(WarenEingangData wd)
+    {
+        if (wd.USER_ETA != null)
+        {
+            return String.Format("{0:d/M/yyyy}", wd.USER_ETA);
+        }
+        else
+        {
+
+            return null;
+        }
+
+    }
+
+    private string GetETD(WarenEingangData wd)
+    {
+        if (wd.USER_ETD != null)
+        {
+            return String.Format("{0:d/M/yyyy}", wd.USER_ETD);
+        }
+        else
+        {
+
+            return null;
+        }
+
+    }
+
+    private void LoadWithOpInfo()
+    {
+        foreach(WarenEingangData wd in ListSeeContainers)
+        {
+            wd.KHKOpUbersicht = ListUnterwegsOp.FirstOrDefault(x => x.LF_Rechnungnummer == wd.USER_Rechnungsnummer);
+            if (wd.KHKOpUbersicht == null)
+            {
+                wd.KHKOpUbersicht = new KHKOpUbersicht();
+            }
+
+        }
+    }
+
+
+}

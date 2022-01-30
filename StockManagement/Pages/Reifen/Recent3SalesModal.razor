@@ -1,0 +1,332 @@
+﻿@if (ready)
+{
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content mt-3">
+            <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+
+            <div class="row">
+                <div class="col-sm-5 my-5">
+                    <RadzenChart SeriesClick="@GetSelectedMonth">
+                        <RadzenColumnSeries Data="@Last5Months" CategoryProperty="Month" Title="Monthly Sale" LineType="LineType.Solid" ValueProperty="Sale" />
+
+                        <RadzenColumnOptions Radius="5" />
+                        <RadzenValueAxis FormatString="{0,0:N0}">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Monthly Sales" />
+                        </RadzenValueAxis>
+                        <RadzenLegend Position="LegendPosition.Bottom" />
+                    </RadzenChart>
+                </div>
+
+                <div class="col-sm-2 patternwrapper my-3 ml-5">
+                    <table class="table table-bordered table-dark" style="font-size:82%;">
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>Sale @(selectedMonthName)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (MonthPatternSales mps in SelectedMonthSalesByPattern)
+                            {
+                                <tr>
+                                    <td>@mps.Pattern</td>
+                                    <td>@String.Format("{0,0:N0}", mps.Sale)</td>
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+                </div>
+                @if (Mode == "REIFEN")
+                {
+                    <div class="col-sm-3 patternwrapper my-3 ml-5">
+                        <table class="table table-bordered table-dark" style="font-size:82%;">
+                            <thead>
+                                <tr>
+                                    <th>Pattern</th>
+                                    <th>Size</th>
+                                    <th>Sale @(selectedMonthName)</th>
+                                    @if (selectedMonthName == currentMonthName)
+                    {
+                                <th>Stock</th>
+                    }
+                                    
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (ArtikelData dto in ListArtikel)
+                                {
+                                <tr>
+                                    <td>@dto.USER_ArtikelName</td>
+                                    <td>@dto._Size</td>
+                                    <td>@String.Format("{0,0:N0}", dto.SelectedMonthSale)</td>
+                                    @if (selectedMonthName == currentMonthName)
+                                    {
+                                        <td style="@(dto.Bestand<dto.SelectedMonthSale ? "color:red;" : "")">@String.Format("{0,0:N0}", dto.Bestand)</td>
+                                    }
+
+                                </tr>
+                                }
+
+                            </tbody>
+
+                        </table>
+                    </div>
+                }
+
+                @if (Mode == "FELGEN")
+                {
+                    <div class="col-sm-4 patternwrapper my-3 ml-5">
+                        <table class="table table-bordered table-dark" style="font-size:82%; white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    <th>Matchcode</th>
+                                    <th>Sale @(selectedMonthName)</th>
+                                    @if (selectedMonthName == currentMonthName)
+                                    {
+                                        <th>Stock</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (ArtikelData dto in ListArtikel)
+                                {
+                                <tr>
+                                    <td>@dto.Matchcode</td>
+                                    <td>@String.Format("{0,0:N0}", dto.SelectedMonthSale)</td>
+                                    @if (selectedMonthName == currentMonthName)
+                                    {
+                                        <td style="@(dto.Bestand<dto.SelectedMonthSale ? "color:red;" : "")">@String.Format("{0,0:N0}", dto.Bestand)</td>
+                                    }
+                                </tr>
+                                }
+
+                            </tbody>
+
+                        </table>
+                    </div>
+                }
+
+            </div>                      
+        </div>
+
+
+    </div>
+}
+
+
+@code {
+
+    [Parameter]
+    public List<ArtikelData> ListArtikel { get; set; }
+    [Parameter]
+    public string Mode { get; set; }
+    private bool ready = false;
+
+    private DataItem[] Last5Months { get; set; }
+    private List<MonthPatternSales> SelectedMonthSalesByPattern { get; set; }
+    //private List<ArtikelData> ArtikelSalesBySelectedMonth { get; set; }
+
+    private int currentMonth = Int32.Parse(DateTime.Now.ToString("MM"));
+    private string currentMonthName { get; set; }
+    private int currentYear = Int32.Parse(DateTime.Now.ToString("yyyy"));
+    private int selectedMonthNumber { get; set; }
+    private string selectedMonthName { get; set; }
+    private List<string> Patterns { get; set; }
+
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+    class DataItem
+    {
+        public string Month { get; set; }
+        public int Sale { get; set; }
+    }
+    class MonthPatternSales
+    {
+        public string Pattern { get; set; }
+        public int Sale { get; set; }
+    }
+
+
+    protected override void OnParametersSet()
+    {
+        selectedMonthName = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(currentMonth);
+        selectedMonthNumber = currentMonth;
+        currentMonthName= System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(currentMonth);
+        Patterns = ListArtikel.Select(x => x.USER_ArtikelName).Distinct().ToList();
+        SelectedMonthSalesByPattern = new List<MonthPatternSales>();
+        LoadPatternList();
+        LoadDataToList();
+        LoadArtikelSalesBySelectedMonth();
+        ready = true;
+    }
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+    private void LoadDataToList()
+    {
+        Last5Months = new DataItem[]
+        {
+             new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 11) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[12 + currentMonth])
+            },
+             new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 10) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[13 + currentMonth])
+            },
+             new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 9) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[14 + currentMonth])
+            },
+             new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 8) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[15 + currentMonth])
+            },
+             new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 7) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[16 + currentMonth])
+            },
+             new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 6) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[17 + currentMonth])
+            },
+             new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 5) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[18 + currentMonth])
+            },
+            new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 4) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[19 + currentMonth])
+            },
+              new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 3) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[20 + currentMonth])
+            },
+               new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 2) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[21 + currentMonth])
+            },
+               new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 1) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[22 + currentMonth])
+            },
+
+             new DataItem
+            {
+                Month=System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName((23 + currentMonth - 0) % 12 + 1),
+                Sale=(int)ListArtikel.Sum(x => x.List3Months[23 + currentMonth])
+            }
+
+        };
+    }
+    private void GetSelectedMonth(SeriesClickEventArgs args)
+    {
+        selectedMonthName = args.Category.ToString();
+        selectedMonthNumber = GetNumberFromMonthName(selectedMonthName);
+        LoadPatternList();
+        LoadArtikelSalesBySelectedMonth();
+    }
+    private int GetNumberFromMonthName(string monthName)
+    {
+        if (monthName == "Jan")
+        {
+            return 1;
+        }
+        if (monthName == "Feb")
+        {
+            return 2;
+        }
+        if (monthName == "Mär")
+        {
+            return 3;
+        }
+        if (monthName == "Apr")
+        {
+            return 4;
+        }
+        if (monthName == "Mai")
+        {
+            return 5;
+        }
+        if (monthName == "Jun")
+        {
+            return 6;
+        }
+        if (monthName == "Jul")
+        {
+            return 7;
+        }
+        if (monthName == "Aug")
+        {
+            return 8;
+        }
+        if (monthName == "Sep")
+        {
+            return 9;
+        }
+        if (monthName == "Okt")
+        {
+            return 10;
+        }
+        if (monthName == "Nov")
+        {
+            return 11;
+        }
+        if (monthName == "Dez")
+        {
+            return 12;
+        }
+        return 0;
+    }
+    private void LoadPatternList()
+    {
+        SelectedMonthSalesByPattern.Clear();
+
+        int howManyMonthsBack = Math.Abs(currentMonth - selectedMonthNumber);
+        foreach(string p in Patterns)
+        {
+            MonthPatternSales toAdd = new MonthPatternSales();
+            toAdd.Pattern = p;
+            toAdd.Sale = (int)ListArtikel.Where(x => x.USER_ArtikelName == p).Sum(x => x.List3Months[23 - howManyMonthsBack + currentMonth]);
+            SelectedMonthSalesByPattern.Add(toAdd);
+
+        }
+        SelectedMonthSalesByPattern = SelectedMonthSalesByPattern.OrderByDescending(x => x.Sale).ToList();
+        //Trace.WriteLine(SelectedMonthSalesByPattern.Sum(x => x.Sale));
+    }
+    private void LoadArtikelSalesBySelectedMonth()
+    {
+        int howManyMonthsBack = Math.Abs(currentMonth - selectedMonthNumber);
+
+        foreach(ArtikelData dto in ListArtikel)
+        {
+            dto.SelectedMonthSale = (int)dto.List3Months[23 - howManyMonthsBack + currentMonth];
+        }
+        ListArtikel = ListArtikel.OrderByDescending(x => x.SelectedMonthSale).ToList();
+
+
+       
+
+    }
+
+}

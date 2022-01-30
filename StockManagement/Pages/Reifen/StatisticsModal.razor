@@ -1,0 +1,190 @@
+﻿@using System.Globalization
+
+@(ready){
+<!-- The Modal -->
+<div id="myModal" class="modal">
+
+    <!-- Modal content -->
+    <div class="modal-content m-0 p-0 text-center mt-3">
+        <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Favorite" /></button></div>
+        <h5>@PatternName</h5>
+        <div class="row mt-5">
+            <div class="col-5">
+                <p>Monthly Sales</p>
+
+                <RadzenChart>
+                    <RadzenLineSeries Smooth="true" Data="@sales1" CategoryProperty="Date" Title="@((currentYear - 1).ToString())" LineType="LineType.Dashed" ValueProperty="Sales">
+                        <RadzenMarkers MarkerType="MarkerType.Square" />
+                    </RadzenLineSeries>
+                    <RadzenLineSeries Smooth="true" Data="@sales0" CategoryProperty="Date" Title="@((currentYear - 0).ToString())" ValueProperty="Sales">
+                        <RadzenMarkers MarkerType="MarkerType.Circle" />
+                    </RadzenLineSeries>
+                    <RadzenCategoryAxis Padding="20" FormatString="{0:MMM}" />
+                    <RadzenValueAxis>
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="Monthly Sales" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+
+            </div>
+
+            <div class="col-3">
+                <p>Sale Quantity@(" " + currentYear + "-" + (currentYear - 1))</p>
+                <p>@(String.Format("{0,0:N0}", patternQty/wholeQty*100)+"%")</p>
+                <RadzenChart>
+                    <RadzenPieSeries Data="@patternsQty" Title="Percentage" CategoryProperty="PatternTyp" ValueProperty="Percentage" />
+                    <RadzenLegend Position="LegendPosition.Bottom" />
+                    <RadzenValueAxis FormatString="{0,0:N}" />
+                </RadzenChart>
+
+            </div>
+
+            <div class="col-3">
+                <p>Revenue@(" " + currentYear + "-" + (currentYear - 1))</p>
+                <p>@(String.Format("{0,0:N0}", patternBetrag/wholeBetrag*100)+"%")</p>
+                <RadzenChart>
+                    <RadzenPieSeries Data="@patternsUmsatz" Title="Percentage" CategoryProperty="PatternTyp" ValueProperty="Percentage" />
+                    <RadzenLegend Position="LegendPosition.Bottom" />
+                    <RadzenValueAxis Formatter="@FormatAsUSD" />
+                </RadzenChart>
+
+            </div>
+
+
+        </div>
+
+        <div class="row">
+
+        </div>
+
+    </div>
+
+</div>
+}
+
+@code {
+    private bool ready = false;
+
+    [Parameter]
+    public List<ArtikelData> ReifenList { get; set; }
+    [Parameter]
+    public List<string> PatternNames { get; set; }
+
+    [Parameter]
+    public string PatternName { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+    private int currentYear = Int32.Parse(DateTime.Now.ToString("yyyy"));
+
+
+    DataItem[] sales0;
+    DataItem[] sales1;
+
+    DataItemPattern[] patternsQty;
+    DataItemPattern[] patternsUmsatz;
+
+    private double patternQty;
+    private double wholeQty;
+    private double patternBetrag;
+    private double wholeBetrag;
+
+    protected override void OnParametersSet()
+    {
+        LoadMonthSaleSeries();
+        LoadPatternsQtyPie();
+        LoadPatternsBetragPie();
+
+        ready = true;
+    }
+
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+
+    class DataItem
+    {
+        public string Date { get; set; }
+        public double Sales { get; set; }
+    }
+    class DataItemPattern
+    {
+        public string PatternTyp { get; set; }
+        public double Percentage { get; set; }
+    }
+
+    private void LoadPatternsQtyPie()
+    {
+        patternQty = (double)ReifenList.Where(x => x.USER_ArtikelName == PatternName).Sum(x => (x.Sum0 ?? 0) + (x.Sum1 ?? 0));
+        wholeQty = (double)ReifenList.Sum(x => (x.Sum0 ?? 0) + (x.Sum1 ?? 0));
+
+
+        patternsQty = new DataItemPattern[]
+{
+            new DataItemPattern{ PatternTyp = "Others", Percentage=(double)ReifenList.Where(x => x.USER_ArtikelName != PatternName).Sum(x => (x.Sum0 ?? 0) + (x.Sum1 ?? 0)) },
+            new DataItemPattern{ PatternTyp = PatternName, Percentage=(double)ReifenList.Where(x => x.USER_ArtikelName == PatternName).Sum(x => (x.Sum0 ?? 0) + (x.Sum1 ?? 0)) }
+      };
+    }
+    private void LoadPatternsBetragPie()
+    {
+        patternBetrag = (double)ReifenList.Where(x => x.USER_ArtikelName == PatternName).Sum(x => (x.Betrag0 ?? 0) + (x.Betrag1 ?? 0));
+        wholeBetrag = (double)ReifenList.Sum(x => (x.Betrag0 ?? 0) + (x.Betrag1 ?? 0));
+
+        patternsUmsatz = new DataItemPattern[]
+{
+            new DataItemPattern{ PatternTyp = "Others", Percentage=(double)ReifenList.Where(x => x.USER_ArtikelName != PatternName).Sum(x => (x.Betrag0 ?? 0) + (x.Betrag1 ?? 0)) },
+            new DataItemPattern{ PatternTyp = PatternName, Percentage=(double)ReifenList.Where(x => x.USER_ArtikelName == PatternName).Sum(x => (x.Betrag0 ?? 0) + (x.Betrag1 ?? 0)) }
+     };
+
+    }
+
+
+
+    private void LoadMonthSaleSeries()
+    {
+        sales0 = new DataItem[]
+   {
+            new DataItem{ Date = "Jan",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month1_0 ?? 0)},
+            new DataItem{ Date = "Feb",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month2_0 ?? 0)},
+            new DataItem{ Date = "Mar",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month3_0 ?? 0)},
+            new DataItem{ Date = "Apr",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month4_0 ?? 0)},
+            new DataItem{ Date = "May",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month5_0 ?? 0)},
+            new DataItem{ Date = "Jun",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month6_0 ?? 0)},
+            new DataItem{ Date = "Jul",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month7_0 ?? 0)},
+            new DataItem{ Date = "Aug",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month8_0 ?? 0)},
+            new DataItem{ Date = "Sep",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month9_0 ?? 0)},
+            new DataItem{ Date = "Oct",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month10_0 ?? 0)},
+            new DataItem{ Date = "Nov",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month11_0 ?? 0)},
+            new DataItem{ Date = "Dec",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month12_0 ?? 0) }
+
+           };
+
+        sales1 = new DataItem[]
+   {
+            new DataItem{ Date = "Jan",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month1_1 ?? 0)},
+            new DataItem{ Date = "Feb",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month2_1 ?? 0)},
+            new DataItem{ Date = "Mar",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month3_1 ?? 0)},
+            new DataItem{ Date = "Apr",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month4_1 ?? 0)},
+            new DataItem{ Date = "May",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month5_1 ?? 0)},
+            new DataItem{ Date = "Jun",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month6_1 ?? 0)},
+            new DataItem{ Date = "Jul",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month7_1 ?? 0)},
+            new DataItem{ Date = "Aug",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month8_1 ?? 0)},
+            new DataItem{ Date = "Sep",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month9_1 ?? 0)},
+            new DataItem{ Date = "Oct",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month10_1 ?? 0)},
+            new DataItem{ Date = "Nov",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month11_1 ?? 0)},
+            new DataItem{ Date = "Dec",Sales=(double)ReifenList.Where(x=>x.USER_ArtikelName==PatternName).Sum(x=>x.Month12_1 ?? 0) }
+
+           };
+    }
+
+
+    string FormatAsUSD(object value)
+    {
+        return ((double)value).ToString("C0", CultureInfo.CreateSpecificCulture("de-DE"));
+    }
+
+
+}

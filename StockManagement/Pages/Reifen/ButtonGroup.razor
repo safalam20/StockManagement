@@ -1,0 +1,140 @@
+﻿<!-- The Modal -->
+<div class="modalfeatures">
+
+    <!-- Modal content -->
+    <div class="modal-contentfeatures">
+        <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Favorite" /></button></div>
+
+        <div class="m-5">
+           
+            <div class="row m-3">
+                <div class="col-5">
+                    <button @onclick="OpenSeeContainers" type="button" class="btn featurebutton btn-info">
+                        Sea Containers
+                    </button>
+                </div>
+                <div class="col-7">
+                    <p>Container Details (On Way)</p>
+                </div>
+            </div>
+
+            <div class="row m-3">
+                <div class="col-5">
+                    <button class="btn featurebutton btn-info" type="button" @onclick="OpenCostForm">
+                        Cost Configuration
+                    </button>
+                </div>
+                <div class="col-7">
+                    Change Cost Calculation Variables
+                </div>
+            </div>
+
+            <div class="row m-3">
+                <div class="col-5">
+
+                    <button class="btn featurebutton btn-info" type="button" @onclick="ShowFactory">
+                        Factory Stock
+                    </button>
+
+                </div>
+                <div class="col-7">
+                    Read Factory Stock from Excel File
+                </div>
+            </div>
+
+            <div class="row m-3">
+                <div class="col-5">
+
+                    <button class="btn featurebutton btn-info" type="button" @onclick="ExportExcel">
+                        Excel Export
+                    </button>
+
+                </div>
+                <div class="col-7">
+                    Download the Excel
+                </div>
+            </div>
+
+            <div class="row m-3">
+                <div class="col-5">
+
+                    @if (isEkAuthenticated)
+                    {
+                        <button class="btn featurebutton btn-info" type="button" @onclick="CheckInvoices">
+                            Check Invoice
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn featurebutton btn-info" type="button" @onclick="CheckInvoices" disabled="true">
+                            Check Invoice
+                        </button>
+                    }
+
+
+                </div>
+                <div class="col-7">
+                    
+                </div>
+            </div>
+        </div>
+       
+    </div>
+    </div>
+        @code {
+
+            [Parameter]
+            public EventCallback<bool> CloseDialog { get; set; }
+
+            [Parameter]
+            public EventCallback<bool> EInfoModal { get; set; }
+            [Parameter]
+            public EventCallback<bool> ESeeContainers { get; set; }
+            [Parameter]
+            public EventCallback<bool> ECostForm { get; set; }
+            [Parameter]
+            public EventCallback<bool> EShowFactory { get; set; }
+            [Parameter]
+            public EventCallback<bool> EExportExcel { get; set; }
+            [Parameter]
+            public EventCallback<bool> ECheckInvoice { get; set; }
+
+            [Parameter]
+            public bool isEkAuthenticated { get; set; }
+
+            private async Task closeDialog()
+            {
+                await CloseDialog.InvokeAsync(false);
+            }
+            private async Task OpenInfoModal()
+            {
+                await EInfoModal.InvokeAsync(false);
+
+                await closeDialog();
+            }
+            private async Task OpenSeeContainers()
+            {
+                await ESeeContainers.InvokeAsync(false);
+                await closeDialog();
+            }
+            private async Task OpenCostForm()
+            {
+                await ECostForm.InvokeAsync(false);
+                await closeDialog();
+            }
+            private async Task ShowFactory()
+            {
+                await EShowFactory.InvokeAsync(false);
+                await closeDialog();
+            }
+
+            private async Task ExportExcel()
+            {
+                await EExportExcel.InvokeAsync(false);
+            }
+            private async Task CheckInvoices()
+            {
+                await ECheckInvoice.InvokeAsync(false);
+                await closeDialog();
+            }
+        }

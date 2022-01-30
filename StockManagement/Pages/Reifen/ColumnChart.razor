@@ -1,0 +1,139 @@
+﻿@using System.Globalization
+
+@if (ready)
+{
+<div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger p-1"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Favorite" Size="Size.Small"/></button></div>
+<br/>
+<br />
+    <div class="row">
+        <div class="col">
+            <RadzenChart>
+                <RadzenColumnSeries Data="@DEWar" CategoryProperty="Year" Title="DE Wareneingang" LineType="LineType.Dashed" ValueProperty="Betrag" />
+                <RadzenColumnSeries Data="@TSWar" CategoryProperty="Year" Title="Export Wareneingang" ValueProperty="Betrag" />
+                <RadzenColumnSeries Data="@Umsatz" CategoryProperty="Year" Title="Umsatz" ValueProperty="Betrag" />
+                <RadzenColumnOptions Radius="5" />
+                <RadzenValueAxis Formatter="@FormatAsUSD">
+                    <RadzenGridLines Visible="true" />
+                    <RadzenAxisTitle Text="Revenue in USD" />
+                </RadzenValueAxis>
+
+
+            </RadzenChart>
+        </div>
+
+        <div class="col">
+            <RadzenChart>
+                <RadzenColumnSeries Data="@DEWarQty" CategoryProperty="Year" Title="DE Wareneingang" LineType="LineType.Dashed" ValueProperty="Betrag" />
+                <RadzenColumnSeries Data="@TSWarQty" CategoryProperty="Year" Title="Export Wareneingang" ValueProperty="Betrag" />
+                <RadzenColumnSeries Data="@SaleQty" CategoryProperty="Year" Title="Umsatz" ValueProperty="Betrag" />
+                <RadzenColumnOptions Radius="5" />
+                <RadzenValueAxis>
+                    <RadzenGridLines Visible="true" />
+                    <RadzenAxisTitle Text="Quantities" />
+                </RadzenValueAxis>
+            </RadzenChart>
+        </div>
+    </div>
+
+
+}
+
+
+@code {
+    [Parameter]
+    public ArtikelData artikel { get; set; }
+    private bool ready = false;
+    [Parameter]
+    public decimal EURUSD { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+    class DataItem
+    {
+        public string Year { get; set; }
+        public double Betrag { get; set; }
+    }
+    DataItem[] DEWar;
+    DataItem[] TSWar;
+    DataItem[] Umsatz;
+
+
+    DataItem[] DEWarQty;
+    DataItem[] TSWarQty;
+    DataItem[] SaleQty;
+
+    private int currentYear = Int32.Parse(DateTime.Now.ToString("yyyy"));
+
+
+    protected override void OnParametersSet()
+    {
+        LoadBetragSeries();
+        LoadQtySeries();
+        ready = true;
+    }
+
+    private void LoadBetragSeries()
+    {
+        DEWar = new DataItem[]
+        {
+            new DataItem{Year=(currentYear-2).ToString(),Betrag=(double)(artikel.ConWarBetrag2 ?? 0)},
+            new DataItem{Year=(currentYear-1).ToString(),Betrag=(double)(artikel.ConWarBetrag1?? 0)},
+            new DataItem{Year=(currentYear).ToString(),Betrag=(double)(artikel.ConWarBetrag0 ?? 0)},
+
+                };
+
+        TSWar = new DataItem[]
+       {
+            new DataItem{Year=(currentYear-2).ToString(),Betrag=(double)(artikel.ConWarTSBetrag2 ?? 0)},
+            new DataItem{Year=(currentYear-1).ToString(),Betrag=(double)(artikel.ConWarTSBetrag1 ?? 0)},
+            new DataItem{Year=(currentYear).ToString(),Betrag=(double)(artikel.ConWarTSBetrag0 ?? 0)},
+
+               };
+        Umsatz = new DataItem[]
+       {
+            new DataItem{Year=(currentYear-2).ToString(),Betrag=(double)(artikel.Betrag2*EURUSD ?? 0)},
+            new DataItem{Year=(currentYear-1).ToString(),Betrag=(double)(artikel.Betrag1*EURUSD ?? 0)},
+            new DataItem{Year=(currentYear).ToString(),Betrag=(double)(artikel.Betrag0*EURUSD ?? 0)},
+
+               };
+    }
+
+    private void LoadQtySeries()
+    {
+        DEWarQty = new DataItem[]
+        {
+            new DataItem{Year=(currentYear-2).ToString(),Betrag=(int)(artikel.ConWar2 ?? 0)},
+            new DataItem{Year=(currentYear-1).ToString(),Betrag=(int)(artikel.ConWar1 ?? 0)},
+            new DataItem{Year=(currentYear).ToString(),Betrag=(int)(artikel.ConWar0 ?? 0)},
+
+                };
+
+        TSWarQty = new DataItem[]
+       {
+            new DataItem{Year=(currentYear-2).ToString(),Betrag=(int)(artikel.ConWarTS2 ?? 0)},
+            new DataItem{Year=(currentYear-1).ToString(),Betrag=(int)(artikel.ConWarTS1 ?? 0)},
+            new DataItem{Year=(currentYear).ToString(),Betrag=(int)(artikel.ConWarTS0 ?? 0)},
+
+               };
+        SaleQty = new DataItem[]
+       {
+            new DataItem{Year=(currentYear-2).ToString(),Betrag=(int)(artikel.Sum2 ?? 0)},
+            new DataItem{Year=(currentYear-1).ToString(),Betrag=(int)(artikel.Sum1 ?? 0)},
+            new DataItem{Year=(currentYear).ToString(),Betrag=(int)(artikel.Sum0 ?? 0)},
+
+               };
+    }
+
+
+    private string FormatAsUSD(object value)
+    {
+        return ((double)value).ToString("C0", CultureInfo.CreateSpecificCulture("en-US"));
+    }
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+
+}

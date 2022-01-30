@@ -1,0 +1,325 @@
+﻿@inject ISaleRepository repo
+
+@if (ready)
+{
+
+    <!-- The Modal -->
+<div class="modalform">
+
+    <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger p-2"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+    <br />
+    <h4 style="font-style:italic; margin-left:10%;">Felgen</h4>
+
+    <div class="col-11 m-2" style="background-color:gold; font-size:85%;">
+        <EditForm Model="@FelgenCost">
+            <table class="table table-bordered" style="white-space:nowrap;">
+                <tbody>
+                    <tr>
+                        <th>Radius</th>
+                        <th>16</th>
+                        <th>17</th>
+                        <th>18</th>
+                        <th>19</th>
+                        <th>20</th>
+                        <th>21</th>
+                        <th>22</th>
+                    </tr>
+
+
+                    <tr>
+                        <th>Total Boxes in a Container</th>
+                        <td><InputNumber @bind-Value=FelgenCost.Container16 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.Container17 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.Container18 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.Container19 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.Container20 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.Container21 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.Container22 class="form-control form-control-sm" /></td>
+                    </tr>
+
+                    <tr>
+                        <th>Versand Kosten Lager FT</th>
+                        <td><InputNumber @bind-Value=FelgenCost.VKLagerFT16 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.VKLagerFT17 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.VKLagerFT18 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.VKLagerFT19 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.VKLagerFT20 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.VKLagerFT21 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.VKLagerFT22 class="form-control form-control-sm" /></td>
+                    </tr>
+
+                    <tr>
+                        <th>Lager Handling GoIn-GoOut</th>
+                        <td><InputNumber @bind-Value=FelgenCost.LagerGoInOut16 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.LagerGoInOut17 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.LagerGoInOut18 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.LagerGoInOut19 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.LagerGoInOut20 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.LagerGoInOut21 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.LagerGoInOut22 class="form-control form-control-sm" /></td>
+                    </tr>
+
+                   
+
+                    <tr>
+                        <th>Profit Percent</th>
+                        <td><InputNumber @bind-Value=FelgenCost.ProfitPer16 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.ProfitPer17 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.ProfitPer18 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.ProfitPer19 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.ProfitPer20 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.ProfitPer21 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=FelgenCost.ProfitPer22 class="form-control form-control-sm" /></td>
+                      
+                    </tr>
+                </tbody>
+            </table>
+
+            <br />
+
+            <table class="table table-bordered" style="white-space:nowrap;">
+                <tr>
+                    <th>See Fracht$</th>
+                    <th>USD/EUR</th>
+                    <th>Nachlauf€</th>
+                    <th>Demurage€</th>
+                    <th>Mould Investment$</th>
+                    <th>TÜV ABE ZER€</th>
+                    <th>Deckel€</th>
+                    <th>Zubehör Paket€</th>
+                    <th>Vertrieb Kosten€</th>
+                    <th>Finanzierung%</th>
+                    <th>Verpackung Material</th>
+                    <th>Reklamation</th>
+                    <th>LC Bank Kosten%</th>
+
+                </tr>
+
+                <tr>
+                    <td><InputNumber @bind-Value=FelgenCost.SeeFracht class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.USDEUR class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.Nachlauf class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.Demurage class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.MouldInvestment class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.TuvAbeZer class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.Deckel class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.ZubehorPaket class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.VertriebKosten class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.Finanzierung class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.VerVerpMat class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.Reklamation class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=FelgenCost.LCBankKosten class="form-control form-control-sm" /></td>
+                </tr>
+            </table>
+        </EditForm>
+    </div>
+
+
+
+
+    <br />
+    
+    <h4 style="font-style:italic; margin-left:10%;">Reifen</h4>
+
+    <div class="col-12 m-2" style="background-color:aquamarine; font-size:85%;">
+        <EditForm Model="@ReifenCost">
+            <table class="table table-bordered" style="white-space:nowrap;">
+                <tbody>
+                    <tr>
+                        <th>Radius</th>
+                        <th>13</th>
+                        <th>14</th>
+                        <th>15</th>
+                        <th>16</th>
+                        <th>17</th>
+                        <th>18</th>
+                        <th>19</th>
+                        <th>20</th>
+                        <th>21</th>
+                        <th>22</th>
+                    </tr>
+
+                    <tr>
+                        <th>Versand Kosten Lager FT</th>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT13 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT14 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT15 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT16 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT17 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT18 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT19 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT20 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT21 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.VKLagerFT22 class="form-control form-control-sm" /></td>
+                    </tr>
+
+                    <tr>
+                        <th>Lager Handling GoIn-GoOut</th>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut13 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut14 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut15 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut16 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut17 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut18 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut19 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut20 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut21 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.LagerGoInOut22 class="form-control form-control-sm" /></td>
+                    </tr>
+
+                    <tr>
+                        <th>Profit Percent</th>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer13 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer14 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer15 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer16 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer17 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer18 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer19 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer20 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer21 class="form-control form-control-sm" /></td>
+                        <td><InputNumber @bind-Value=ReifenCost.ProfitPer22 class="form-control form-control-sm" /></td>
+
+                    </tr>
+                </tbody>
+            </table>
+
+            <br />
+
+            <table class="table table-bordered" style="white-space:nowrap;">
+                <tr>
+                    <th>See Fracht$</th>
+                    <th>USD/EUR</th>
+                    <th>Nachlauf€</th>
+                    <th>Demurage€</th>
+                    <th>Mould Investment$</th>
+                    <th>TÜV ABE ZER€</th>
+                    <th>Deckel€</th>
+                    <th>Zubehör Paket€</th>
+                    <th>Vertrieb Kosten€</th>
+                    <th>Finanzierung%</th>
+                    <th>Verpackung Material€</th>
+                    <th>Reklamation€</th>
+                    <th>LC Bank Kosten%</th>
+
+                </tr>
+
+                <tr>
+                    <td><InputNumber @bind-Value=ReifenCost.SeeFracht class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.USDEUR class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.Nachlauf class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.Demurage class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.MouldInvestment class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.TuvAbeZer class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.Deckel class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.ZubehorPaket class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.VertriebKosten class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.Finanzierung class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.VerVerpMat class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.Reklamation class="form-control form-control-sm" /></td>
+                    <td><InputNumber @bind-Value=ReifenCost.LCBankKosten class="form-control form-control-sm" /></td>
+                </tr>
+            </table>
+
+
+
+        </EditForm>
+
+
+
+    </div>
+
+
+    <EditForm Model="@LieferantZollList">
+        <table class="table table-bordered col-5 ml-5">
+            <thead>
+                <tr style="white-space:nowrap;">
+                    <th>Lieferant</th>
+                    <th>Zoll %</th>
+                    <th>Anti Dumping %</th>
+                    <th>Sea Freight</th>
+                    <th>Currency</th>
+                </tr>
+            </thead>
+            @foreach (LieferantZoll lz in LieferantZollList)
+            {
+        <tr>
+            <th>@lz.Lieferant</th>
+            <td><InputNumber @bind-Value=lz.Zoll class="form-control form-control-sm" /></td>
+            <td><InputNumber @bind-Value=lz.AntiDumping class="form-control form-control-sm" /></td>
+            <td><InputNumber @bind-Value=lz.SeeFracht class="form-control form-control-sm" /></td>
+            <td><InputText @bind-Value=lz.Currency class="form-control form-control-sm" /></td>
+        </tr>
+
+            }
+
+        </table>
+
+
+    </EditForm>
+
+    <div class="saveButton">
+        <button type="button" class="btn btn-secondary btn-lg px-5" @onclick="SaveForm" style="background-color:yellow; color:black;">Save</button>
+    </div>
+
+
+</div>
+
+
+}
+
+
+@code {
+
+    [Parameter]
+    public List<CostVariables> VariableList { get; set; }
+    [Parameter]
+    public List<ArtikelData> ArtikelList { get; set; }
+    [Parameter]
+    public List<LieferantZoll> LieferantZollList { get; set; }
+
+
+    private CostVariables FelgenCost { get; set; }
+    private CostVariables ReifenCost { get; set; }
+    private List<string> LieferantCodes { get; set; }
+    private bool ready = false;
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+
+    protected override async void OnParametersSet()
+    {
+        FelgenCost = VariableList.Where(x => x.User_ArtikelGruppe == "FELGEN").FirstOrDefault();
+        ReifenCost = VariableList.Where(x => x.User_ArtikelGruppe == "REIFEN").FirstOrDefault();
+        LieferantCodes = ArtikelList.Select(x => x.Lieferant).Distinct().ToList();
+
+
+
+        foreach (string code in LieferantCodes)
+        {
+
+            if (LieferantZollList.Where(x => x.Lieferant == code).FirstOrDefault() == null)
+            {
+                LieferantZoll toAdd = new LieferantZoll { Lieferant = code, Zoll =0,AntiDumping=0 };
+                LieferantZollList.Add(toAdd);
+                await repo.SaveChangesZoll(toAdd);
+            }
+        }
+
+        ready = true;
+    }
+
+    private async Task SaveForm()
+    {
+        await repo.SaveChanges();
+        
+    }
+
+ 
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+}

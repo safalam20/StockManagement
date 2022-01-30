@@ -1,0 +1,2106 @@
+﻿@page "/felgen"
+
+@using Serilog
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
+@inject ISaleRepository repo
+@inject ExportExcelService exportService
+@inject NavigationManager MyNavigationManager
+@inject IJSRuntime JSRuntime
+@inject ReadExcelService excelService
+
+@if (isAuthenticatedBool)
+{
+    @if (ready)
+    {
+        <nav class="navbar navbar-light justify-content-between py-0" style="background-color: #e3f2fd;">
+            <p class="font-italic font-weight-bold ml-5 mb-0 mr-5">
+                @username
+            </p>
+            <div class="row">
+                <div class="col">
+                    <button class="btn btn-sm font-weight-bold mt-1 px-1 btn-light" style="color:forestgreen;" type="button" @onclick="SaveTempOrder">
+                        <MudIcon Icon="@Icons.Material.Filled.Save" Title="Save" Size="Size.Medium" />
+                    </button>
+                </div>
+
+                <div class="col">
+                    <button class="btn btn-sm font-weight-bold mt-1 px-1" type="button" @onclick="OpenFeatures" style="background-color:cornsilk; color: black;">
+                        Features
+                    </button>
+                </div>
+
+                <div class="col mt-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="flexCheckChecke" @onchange="GetUmsatzTop" style="transform:scale(1.5);">
+                        <label class="form-check-label mt-1" for="flexCheckChecke" style="font-weight:bold; white-space:nowrap;">
+                            Umsatz Top 20
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <button class="btn btn-sm font-weight-bold mt-1 px-5" type="button" @onclick="OpenChartView" style="background-color: orange; color: white; ">
+                        <MudTooltip Placement="Placement.Top" Text="Select a pattern and click button">Stats</MudTooltip>
+                    </button>
+                </div>
+            </div>
+
+            <EditForm Model="@FilterDTO">
+                <div class="form-row">
+                    <div class="col-2 mt-1" style="font-weight:bold;">from</div>
+                    <div class="col-4">
+                        <InputSelect @bind-Value="@FilterDTO.BeginMonth" class="form-control form-control-sm">
+                            @for (int i = 0; i < 12; i++)
+                                    {
+                                <option value=@((currentMonth + i) % 12)>@((i + currentMonth < 12 ? currentYear : currentYear + 1) + " " + monthNames[(currentMonth + i) % 12])</option>
+                                    }
+
+                        </InputSelect>
+                    </div>
+                    <div class="col-2 mt-1" style="font-weight:bold;">until</div>
+                    <div class="col-4">
+                        <InputSelect @bind-Value="@FilterDTO.MonthNumber" class="form-control form-control-sm">
+
+                            @for (int i = 0; i < 12; i++)
+                                    {
+                                <option value=@((currentMonth + i) % 12) disabled="@((i == 0 || i == 1))">@((i + currentMonth < 12 ? currentYear : currentYear + 1) + " " + monthNames[(currentMonth + i) % 12])</option>
+                                    }
+
+                        </InputSelect>
+                    </div>
+
+                </div>
+
+            </EditForm>
+
+
+            <EditForm Model="@FilterDTO">
+
+                <div class="form-row">
+                    <div class="col text-right">
+                        <button class="btn btn-sm font-weight-bold mt-1 px-5" type="button" @onclick="ResetList" style="background-color: yellow; color: black; ">
+                            Reset
+                        </button>
+                    </div>
+
+                    <div class="col">
+                        <InputSelect @bind-Value="@FilterDTO.Lieferant" class="form-control form-control-sm mt-1">
+                            <option value="Select">--Lieferant--</option>
+                            @foreach (string l in DistinctLieferants)
+                                    {
+                                @if (l != null)
+                                        {
+                                    <option value=@l>@l</option>
+                                        }
+                                    }
+                        </InputSelect>
+                    </div>
+                    <div class="col">
+                        <InputSelect @bind-Value="@FilterDTO.Pattern" class="form-control form-control-sm mt-1" id="FStatus">
+                            <option value="Select">--Pattern--</option>
+                            @foreach (string p in Patterns)
+                                    {
+                                @if (p != null)
+                                        {
+                                    <option value=@p>@p</option>
+                                        }
+                                    }
+                        </InputSelect>
+                    </div>
+                    <div class="col">
+                        <InputText @bind-Value="@FilterDTO.Size" class="form-control form-control-sm mt-1" placeholder="Search" />
+                    </div>
+                    <div class="col">
+                        <button class="btn btn-sm font-weight-bold mt-1 px-5" type="button" @onclick="FilterList" style="background-color: gray; color: white; ">
+                            LOS
+                        </button>
+                    </div>
+
+                    <div class="col">
+                        <button class="btn btn-sm btn-outline-info font-weight-bold mt-1 px-5" type="button" @onclick="@OpenFilterDialog">
+                            Filter
+                        </button>
+                    </div>
+
+
+                </div>
+            </EditForm>
+
+        </nav>
+        @if (ListFelgenSales != null)
+        {
+            <EditForm Model="@ListTempOrderFelgen">
+                <div class="wrapper">
+
+                    <table class="table table-hover table-bordered table-sm table-striped mytable" style="font-size:90%;">
+                        <thead>
+                            <tr id="firstrow" style="font-size:92%;">
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th @onclick="OpenTempDeleteModal" style="cursor:pointer; text-align:center; color:red;">
+                                    <MudIcon Icon="@Icons.Material.Filled.Delete" Title="RESET" />
+                                </th>
+                                @if (isEkAuthenticated)
+                                {
+                                    <th style="font-size:93%;">@String.Format("{0,0:N0}", GetTotalProduction())</th>
+                                }
+
+                                <th>from</th>
+                                <th>until</th>
+                                <th style="font-size:93%;">@String.Format("{0,0:N0}", GetTotalStock())</th>
+                                <th style="font-size:93%;">@String.Format("{0,0:N0}", GetTotalTransit())</th>
+                                <th style="font-size:93%;">@String.Format("{0,0:N0}", GetTotalBackOrder())</th>
+                                @if (showFactoryBol)
+                                {
+                                    <th scope="col"></th>
+                                }
+
+
+                                @*Pattern*@
+                                <th></th>
+                                @*Matchcode*@
+                                <th></th>
+                                @*Radius*@
+                                <th></th>
+                                @if (isEkAuthenticated)
+                                {
+                                    @*Reel*@
+                                    <th></th>
+                                    @*Ek*@
+                                    <th></th>
+                                }
+
+
+
+
+                                @*Cost*@
+                                <th></th>
+                                @*ContainerDE*@
+                                <th></th>
+                                @*Fracht*@
+                                <th></th>
+                                @*Tyre24*@
+                                <th></th>
+                                @*Years*@
+                                <th></th>
+                                @if (isEkAuthenticated)
+                                {
+                                    @*EK*@
+                                    <th></th>
+                                }
+
+                                @*Export*@
+                                <th style="font-size:90%;">
+                                    <MudTooltip Placement="Placement.End" Text="Sales of -2 year">
+                                        @String.Format("{0,0:N0}", GetTotalSum2())
+                                    </MudTooltip>
+                                </th>
+                                @*Total*@
+                                <th style="font-size:90%;">
+                                    <MudTooltip Placement="Placement.End" Text="Sales of -1 year">
+                                        @String.Format("{0,0:N0}", GetTotalSum1())
+                                    </MudTooltip>
+                                </th>
+                                @*Tendez*@
+                                <th style="font-size:90%; color:blue;">
+                                    <MudTooltip Placement="Placement.End" Text="Sales of current year">
+                                        @String.Format("{0,0:N0}", GetTotalSum0())
+                                    </MudTooltip>
+                                </th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+
+                            <tr class="stickhead" style="white-space:nowrap; font-size:92%;">
+
+                                <th scope="col" @onclick="AnchorOnClickAsync" style="cursor:pointer;">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Title="UP" Size="Size.Small" Color="Color.Success" />
+                                </th>
+                                <th scope="col" @onclick="(() => DoSorting(9))" style="cursor:pointer; text-align:center;">
+                                    <MudTooltip Placement="Placement.End" Text="Percentage of stock to yearly sale (without See Containers and Back Order)">
+                                        <MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Size="Size.Medium" Color="Color.Default" />
+                                    </MudTooltip>
+
+                                </th>
+                                <th scope="col">
+                                    <MudTooltip Placement="Placement.End" Text="Shows the share in pattern sale(or share in filtered list when filter on..)">QTY</MudTooltip>
+                                </th>
+                                <th scope="col" style="border-right-width: thick; border-right-color: darkslategrey;">
+                                    <MudTooltip Placement="Placement.End" Text="Shows the share in pattern sale(or share in filtered list when filter on..)">€</MudTooltip>
+                                </th>
+                                @if (isEkAuthenticated)
+                                {
+                                    <th @onclick="(() => DoSorting(7))" style="cursor: pointer; text-align: center;  " scope="col">
+                                        <MudTooltip Placement="Placement.End" Text="Type your new production offer">Order</MudTooltip>
+                                    </th>
+                                }
+
+                                <th @onclick="(() => DoSorting(6))" scope="col" style="cursor:pointer; ">
+                                    <MudTooltip Placement="Placement.End" Text="New production to secure until second selected month">Order</MudTooltip>
+                                </th>
+                                <th scope="col" style=" border-left-width: thick; border-left-color: darkslategrey;">
+                                    <MudTooltip Placement="Placement.End" Text="Sales until first selected month(container arrival)"> @(monthNames[Int32.Parse(FilterDTO.BeginMonth)])</MudTooltip>
+                                </th>
+                                <th scope="col">
+                                    <MudTooltip Placement="Placement.End" Text="Sales until second selected month(target month)"> @(monthNames[Int32.Parse(FilterDTO.MonthNumber)])</MudTooltip>
+                                </th>
+                                <th @onclick="(() => DoSorting(2))" style="cursor:pointer;" scope="col">
+                                    <MudTooltip Placement="Placement.End" Text="Frankenthal Warehouse Stock"> Stock</MudTooltip>
+                                </th>
+                                <th @onclick="(() => DoSorting(1))" style="cursor:pointer;" scope="col">
+                                    <MudTooltip Placement="Placement.End" Text="Transporting in containers(Click cells to see container details)">
+                                        <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Size="Size.Small" Color="Color.Default" />
+                                    </MudTooltip>
+                                </th>
+                                <th @onclick="(() => DoSorting(4))" style="cursor:pointer;" scope="col">
+                                    <MudTooltip Placement="Placement.End" Text="Back Orders(Click cells to see details)">Back</MudTooltip>
+                                </th>
+                                @if (showFactoryBol)
+                                {
+                                    <th @onclick="(() => DoSorting(5))" style="cursor:pointer;" scope="col">Factory</th>
+                                }
+                                <th scope="col" style="border-left-width:thick; border-left-color:darkslategrey;">Pat</th>
+                                <th scope="col" style="font-weight:bold;">Matchcode</th>
+                                <th scope="col" style=" border-right-width: thick; border-right-color:darkgrey;">R</th>
+                                @if (isEkAuthenticated)
+                {
+                            <th scope="col" >
+                                <MudTooltip Placement="Placement.Top" Text="The average price for Bestellung, On Way and Frankenthal Bestand(click cells to see history) (click cells to see history)">Reel$</MudTooltip>
+                            </th>
+                }
+
+                                @if (isEkAuthenticated)
+                {
+                            <th scope="col">
+                                <MudTooltip Placement="Placement.Top" Text="Current price (click to see prices by other lieferants)">EK$</MudTooltip>
+                            </th>
+                }
+                                
+                                <th scope="col">
+                                    <MudTooltip Placement="Placement.Top" Text="Price and profit after cost calculation(click cells to see calculation)">Cost€</MudTooltip>
+                                </th>
+                                <th style="cursor:pointer;" @onclick="(() => DoSorting(10))" scope="col">ConDE€</th>
+
+                                <th scope="col">Fracht€</th>
+                                <th scope="col">T24€</th>
+                                <th scope="col" style=" border-left-width: thick; border-left-color:darkgrey;">Years</th>
+
+                                @if (isEkAuthenticated)
+                {
+                            <th scope="col">
+                                <MudTooltip Placement="Placement.Top" Text="Average purchase price in years">EK</MudTooltip>
+                            </th>
+                }
+                                
+                                <th @onclick="(() => DoSorting(3))" style="cursor:pointer;" scope="col">
+                                    <MudTooltip Placement="Placement.Top" Text="Export rate to all sales">Expo</MudTooltip>
+                                </th>
+                                <th scope="col">
+                                    <MudTooltip Placement="Placement.Top" Text="Total sales in years(click cells to see diagram)">Total</MudTooltip>
+                                </th>
+                                <th @onclick="(() => DoSorting(8))" scope="col" style="cursor:pointer; border-left-width:thick; border-left-color:darkslategrey;">
+                                    <MudTooltip Placement="Placement.Top" Text="Last 8 months comparison to same months of previous year">
+                                        <MudIcon Icon="@Icons.Material.Filled.Timeline" Size="Size.Small" Color="Color.Default" />
+                                    </MudTooltip>
+                                </th>
+                                <th scope="col">Jan</th>
+                                <th scope="col">Feb</th>
+                                <th scope="col">Mar</th>
+                                <th scope="col">Apr</th>
+                                <th scope="col">May</th>
+                                <th scope="col">Jun</th>
+                                <th scope="col">Jul</th>
+                                <th scope="col">Aug</th>
+                                <th scope="col">Sep</th>
+                                <th scope="col">Oct</th>
+                                <th scope="col">Nov</th>
+                                <th scope="col">Dec</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <Virtualize Items="FilteredData ?? ListFelgenSales" Context="dto">
+                                <tr class="@(dto == selectedRow ? "selectedRow" : "")" @onclick="(() => OnClickHandler(dto))" style="vertical-align: middle !important; font-size: 93%;">
+                                    <th scope="row">@((FilteredData ?? ListFelgenSales).IndexOf(dto) + 1)</th>
+                                    <th style="@(dto.StockPercent<30 ? "color:red;" : "") font-size:92%;">@(String.Format("{0,0:N1}",dto.StockPercent)+"%")</th>
+                                    <td>@GetQtyPercent(dto)</td>
+                                    <td style="border-right-width:thick; border-right-color:darkslategrey;">@GetBetragPercent(dto)</td>
+                                    @if(isEkAuthenticated){
+                                    <td style="max-width:65px;">
+                                        <InputNumber @bind-Value="@(ListTempOrderFelgen.FirstOrDefault(x=>x.Artikelnummer==dto.Artikelnummer).Menge)" class="form-control form-control-sm" />
+                                    </td>
+                                    }
+                                    <td style="@((CalculateNewProduction(dto) != null) ? "color:white; font-weight:bolder; background-color:#fc035e; font-size:90%;" : "")">@CalculateNewProduction(dto)</td>
+                                    <td style="color: blue; font-weight: bold; font-size: 85%; border-left-width: thick; border-left-color: darkslategrey;">@GetProjectedSaleUntilArrival(dto)</td>
+                                    <td style="color:blue;font-weight:bold; font-size:85%;">@GetProjectedSale(dto)</td>
+                                    <td style="text-align: center;">@String.Format("{0:0.##}", @dto.Bestand)</td>
+                                    <td @onclick="(() => OpenTransitInfo(dto))" style="cursor:pointer;">@dto.TransitStock</td>
+                                    <td @onclick="(() => OpenBackOrderInfo(dto))" style="cursor:pointer;">@dto.BackOrder</td>
+                                    @if (showFactoryBol)
+                                    {
+                                        <td>@dto.FactoryStock</td>
+                                    }
+                                    <td style=" border-left-width: thick; border-left-color: darkslategrey;">@dto.USER_ArtikelName</td>
+                                    <td style="font-weight:bold; font-size:90%;">
+                                        @dto.Matchcode
+                                        <br /><span style="font-size:83%; font-weight:normal;">@dto.Artikelnummer</span>
+                                    </td>
+                                    <td style="border-right-width: thick; border-right-color: darkgrey;">@dto.USER_Radius</td>
+
+                                    @if(isEkAuthenticated){
+                                    <td @onclick="(() => OpenLastEKDetails(dto))" style="cursor:pointer; font-weight:bold;">
+                                        @String.Format("{0:0.##}", dto.RealEKAdvanced)
+                                    </td>
+                                    }
+
+                                    @if(isEkAuthenticated)
+                                    {
+                                        <td @onclick="(() => OpenDifferentLieferantModal(dto))" style="cursor:pointer;">@String.Format("{0:0.##}", @dto.MaxEK)</td>
+                                    }
+
+                                    <td @onclick="(() => OpenCostTable(dto))" style="cursor:pointer; text-align:center;">
+                                        @String.Format("{0,0:N2}", dto.ArtikelCost)
+                                    </td>
+                                    <td style="@(dto.ArtikelCost>dto.ContainerDE ? "color:red; font-weight:bold;" : "") text-align:center;">@String.Format("{0,0:N1}", dto.ContainerDE)</td>
+                                    <td style="text-align:center;">@String.Format("{0,0:N1}", dto.ArtikelFracht)</td>
+                                    <td style=" border-right-width: thick; border-right-color:darkgrey;">@String.Format("{0,0:N1}", dto.T24Price)</td>
+                                    <td style="font-size:75%;text-align:center; font-weight:bold;">
+                                        @(currentYear - 2)
+                                        <br /> @(currentYear - 1)
+                                        <br />
+                                        <span style="color:blue;">@currentYear</span>
+                                    </td>
+
+                                    @if(isEkAuthenticated){
+                                    <td style="font-size:75%;text-align:center; font-weight:bold;">
+                                        @GetUnitPrice2(dto)
+                                        <br />
+                                        @GetUnitPrice1(dto)
+                                        <br />
+                                        <span style="color:blue;">@GetUnitPrice0(dto)</span>
+                                    </td>
+                                    }
+
+                                    <td style="font-size:75%;text-align:center; font-weight:bold;">@String.Format("{0,0:N1}", dto.ExportWarenEingangRate * 100)%</td>
+                                    <td @onclick="(() => OpenEingangUmsatz(dto))" style="cursor:pointer; font-size: 75%; text-align: center; border-right-width:thick; border-right-color:darkslategrey; ">
+                                        @String.Format("{0,0:N0}", @dto.Sum2)
+                                        <br />@String.Format("{0,0:N0}", @dto.Sum1)
+                                        <br />
+                                        <span style="color:blue; font-weight:bold;">@String.Format("{0,0:N0}", @dto.Sum0)</span>
+                                    </td>
+                                    <td style="font-size:80%; font-weight:bold; background-color:yellow; text-align:center;">@CalculateLast8MonthPublic(dto)</td>
+                                    @if (selectedRow != dto)
+                                    {
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month1_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month1_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month1_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month2_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month2_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month2_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month3_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month3_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month3_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month4_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month4_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month4_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month5_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month5_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month5_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month6_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month6_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month6_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month7_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month7_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month7_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month8_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month8_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month8_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month9_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month9_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month9_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month10_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month10_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month10_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month11_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month11_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month11_0)</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month12_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month12_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month12_0)</span>
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month1_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month1_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month1_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[0]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month2_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month2_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month2_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[1]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month3_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month3_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month3_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[2]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month4_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month4_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month4_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[3]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month5_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month5_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month5_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[4]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month6_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month6_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month6_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[5]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month7_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month7_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month7_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[6]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month8_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month8_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month8_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[7]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month9_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month9_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month9_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[8]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month10_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month10_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month10_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[9]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month11_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month11_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month11_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[10]</span>
+                                        </td>
+                                        <td style="font-size:75%;text-align:center;">
+                                            @String.Format("{0:0.##}", @dto.Month12_2)
+                                            <br />@String.Format("{0:0.##}", @dto.Month12_1)
+                                            <br />
+                                            <span style="color:green; font-weight:bold;">@String.Format("{0:0.##}", @dto.Month12_0)</span>
+                                            <br />
+                                            <span style="color:red;font-weight:bold;">@dto.SaleProjected[11]</span>
+                                        </td>
+                                    }
+
+                                </tr>
+
+                            </Virtualize>
+
+
+                        </tbody>
+                    </table>
+
+                </div>
+            </EditForm>
+        }
+
+        @if (message != null)
+        {
+            <div class="alert alert-primary col-6" role="alert">
+                @message
+            </div>
+
+        }
+
+        @if (_OpenChartView)
+        {
+            <StatisticsModal ReifenList="@ListFelgenSales" PatternName="@FilterDTO.Pattern" PatternNames="@Patterns" CloseDialog="@CloseChart" />
+        }
+
+
+        @if (showEingangUmsatz)
+        {
+            <div class="bottomsticky">
+                <ColumnChart artikel="@ArtikelToEingangChart" EURUSD="@EURUSD" CloseDialog="@CloseEingangUmsatz" />
+            </div>
+
+        }
+        @if (configureCost)
+        {
+            <EditCostVariables VariableList="@ListCosts" CloseDialog="@CloseCostForm" ArtikelList="@ListFelgenSales" LieferantZollList="@LieferantZolls" />
+
+        }
+        @if (showCostTable)
+        {
+            <div class="bottomsticky" style="min-height:250px; background-color:ivory;">
+                <CostModal data="@ArtikelToCostTable" CloseDialog="@CloseCostDialog" LieferantZolls="@LieferantZolls" cc="@cv" Mode="FELGEN" />
+            </div>
+
+
+        }
+
+
+        @if (_OpenTransitModal)
+        {
+
+            <TransitModal CloseDialog="@CloseTransitModal" ListTransit="@TransitEingangs" />
+        }
+        @if (_OpenBackOrderModal)
+        {
+
+            <BackOrderDetails CloseDialog="@CloseBackOrderModal" ListBackOrders="@ListBackOrderToModal" isEkAuthenticated="@isEkAuthenticated"/>
+        }
+
+        @if (showLastEKModal)
+        {
+            <div class="bottomsticky" style="min-height:350px; background-color:ivory;">
+                <LaskEKDetailsModal ListEingang="@LastEKEingangList" CloseDialog="@CloseLastEKModal" Bestand="@StocktoEkPrice" />
+            </div>
+
+        }
+        @if (showButtonGroup)
+        {
+            <ButtonGroup CloseDialog="@CloseButtonGroup" ECostForm="@OpenCostForm" EShowFactory="@ShowFactory" EExportExcel="@ExportExcel"
+                         ESeeContainers="@OpenSeeContainers" ECheckInvoice="@CheckInvoice" isEkAuthenticated="@isEkAuthenticated"/>
+
+        }
+        @if (showProgressDialog)
+        {
+            <ProgressDialog />
+        }
+        @if (showTempDeleteModal)
+        {
+            <ResetTempOrderModal ECancelDelete="@ResultDeleteModal" />
+        }
+        @if (_OpenSeeContainerModal)
+        {
+            <SeeContainerDetails ListSeeContainers="@ListSeeContainers" CloseDialog="@(()=> _OpenSeeContainerModal=false)" isEkAuthenticated="@isEkAuthenticated"/>
+        }
+        @if (_OpenCheckInvoice)
+        {
+            <InvoiceCheck ListBackOrderDetails="@ListBackOrderDetails" CloseDialog="@(()=> _OpenCheckInvoice=false)" />
+        }
+        @if (_OpenRecent3Dialog)
+        {
+            <Recent3SalesModal ListArtikel="@ListFelgenSales" CloseDialog="@(()=> _OpenRecent3Dialog=false)" Mode="FELGEN"/>
+        }
+        @if (_OpenDifferentLieferantModal)
+        {
+            <div class="bottomsticky" style="height:300px; background-color:ivory;">
+                <ArtikelDifferentLieferantsModal CloseDialog="@(()=> _OpenDifferentLieferantModal=false)" Artikel="@ArtikelToDifferentLiferantModal"/>
+            </div>
+
+        }
+
+        @if (showFilterModal)
+        {
+            <div class="modalfilter">
+
+                <!-- Modal content -->
+                <div class="modal-contentfilter">
+                    <EditForm Model="@FilterDTO">
+
+                        <div style="margin-left:17%;">
+                            <div class="form-row m-3">
+                                <div class="form-group col-md-5">
+                                    <label for="Zoll">Zoll</label>
+                                    <InputText @bind-Value="@FilterDTO.Zoll" class="form-control form-control-sm" />
+                                </div>
+                                <div class="form-group col-md-5">
+                                    <label for="Breite">Breite</label>
+                                    <InputText @bind-Value="@FilterDTO.Breite" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+
+                            <div class="form-row m-3">
+                                <div class="form-group col-md-5">
+                                    <label for="LK">LK</label>
+                                    <InputText @bind-Value="@FilterDTO.LK1" class="form-control form-control-sm" />
+                                </div>
+                                <div class="form-group col-md-5">
+                                    <label for="ET">ET</label>
+                                    <InputText @bind-Value="@FilterDTO.ET" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+
+                            <div class="form-row m-3">
+                                <div class="form-group col-md-5">
+                                    <label for="Farbekurz">Farbekurz</label>
+                                    <InputText @bind-Value="@FilterDTO.Farbekurz" class="form-control form-control-sm" />
+                                </div>
+
+                                <div class="col-md-4 mt-4 ml-5">
+                                    <button class="btn font-weight-bold btn-success" type="button" @onclick="FilterList">
+                                        LOS
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+                    </EditForm>
+
+                </div>
+            </div>
+
+
+
+        }
+    }
+
+}
+else if (!ready)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <p><em>You are not authorized to see this page...</em></p>
+}
+
+
+@code {
+    private List<ArtikelData> ListFelgenSales { get; set; }
+    private List<ArtikelData> FilteredData { get; set; }
+    private List<WarenEingangData> ListFelgenEingang { get; set; }
+    public List<WarenEingangData> TransitEingangs { get; set; }
+    private List<FactoryStockDTO> FactoryStocks { get; set; }
+    public List<LieferantZoll> LieferantZolls { get; set; }
+    public List<CostVariables> ListCosts { get; set; }
+    public CostVariables cv { get; set; }
+    private List<string> Patterns { get; set; }
+    private string username = "";
+    private bool showFactoryBol = false;
+    private bool showFactoryDisable = false;
+    private FilterDTO FilterDTO = new FilterDTO();
+    private IDictionary<int, string> monthNames = new Dictionary<int, string>();
+    private ArtikelData selectedRow { get; set; }
+    private string message = null;
+    private int currentMonth = Int32.Parse(DateTime.Now.ToString("MM"));
+    private int currentYear = Int32.Parse(DateTime.Now.ToString("yyyy"));
+    private bool _OpenChartView = false;
+    private bool _OpenTransitModal = false;
+    private bool configureCost = false;
+    private bool showCostTable = false;
+    public ArtikelData ArtikelToCostTable { get; set; }
+    private decimal EURUSD { get; set; }
+    private bool ready = false;
+    private bool showLastEKModal = false;
+    public List<WarenEingangData> LastEKEingangList { get; set; }
+    public decimal StocktoEkPrice { get; set; }
+    private List<KTEnumerator> KTUsers { get; set; }
+    private bool isAuthenticatedBool = false;
+    private bool showButtonGroup = false;
+    private bool showEingangUmsatz = false;
+    public ArtikelData ArtikelToEingangChart { get; set; }
+    private bool showProgressDialog = false;
+    private bool showFilterModal = false;
+    private List<StefanBackOrderDTO> ListBackOrder { get; set; }
+    private List<StefanBackOrder> ListBackOrderDetails { get; set; }
+    private List<ProductionOffer> ListTempOrderFelgen { get; set; }
+    public List<StefanBackOrder> ListBackOrderToModal { get; set; }
+    private bool _OpenBackOrderModal = false;
+    private List<WarenEingangData> ListSeeContainers { get; set; }
+    private bool _OpenSeeContainerModal = false;
+    private bool _OpenCheckInvoice = false;
+    private bool showTempDeleteModal = false;
+    private bool _OpenRecent3Dialog = true;
+    private List<ArtikelLieferantDTO> ArtikelLieferants { get; set; }
+    private bool _OpenDifferentLieferantModal = false;
+    public ArtikelData ArtikelToDifferentLiferantModal { get; set; }
+    private List<string> DistinctLieferants { get; set; }
+    private bool isEkAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await getWindowsUser();
+        KTUsers = await repo.GetUsers();
+        isAuthenticated();
+        if (isAuthenticatedBool)
+        {
+            LoadMonthNames();
+            FilterDTO.MonthNumber = ((currentMonth +8)%12).ToString();
+            FilterDTO.BeginMonth = ((currentMonth+1)%12).ToString();
+
+            //Database Calls
+            ListFelgenSales = await repo.GetFelgenArtikelDataWithString();
+            ListFelgenSales = ListFelgenSales.OrderBy(x => x.USER_ArtikelName).ThenByDescending(x => x.Sum1).ToList();
+            Patterns = ListFelgenSales.Select(x => x.USER_ArtikelName).Distinct().ToList();
+            ListFelgenEingang = await repo.GetFelgenWareneingang();
+            ListBackOrderDetails = await repo.GetFelgenBackOrdersWithDetails();
+            ListCosts = await repo.GetCostsVariables();
+            cv = ListCosts.Where(x => x.User_ArtikelGruppe == "FELGEN").FirstOrDefault();
+            LieferantZolls = await repo.GetAllLieferantZoll();
+            EURUSD = ListCosts.FirstOrDefault().USDEUR;
+            ListTempOrderFelgen = await repo.GetTempProduktionOffersFelgen();
+            ArtikelLieferants = await repo.GetArtikelLieferantsFelgen();
+            DistinctLieferants = ArtikelLieferants.Select(x => x.Lieferant).Distinct().ToList();
+
+            ListBackOrder = ListBackOrderDetails
+      .GroupBy(x => x.Artikelnummer)
+      .Select(x => new StefanBackOrderDTO()
+      {
+          Artikelnummer = x.Key,
+          BackOrder = x.Sum(x => x.BackOrder)
+      }).ToList();
+
+            // Load DTO with data
+            await LoadDTOWithData();
+            selectedRow = ListFelgenSales.FirstOrDefault();
+
+        }
+        ready = true;
+
+    }
+    private async Task LoadDTOWithData()
+    {
+        //See Container Details
+        ListSeeContainers = ListFelgenEingang
+            .Where(x => x.TransItems != null)
+            .GroupBy(x => new { x.A0Name1, x.BLNummer, x.Referenznummer, x.USER_ETD, x.USER_ETA, x.USER_Spedition, x.USER_Referenznummer, x.USER_Rechnungsnummer,x.Belegart,x.Belegkennzeichen })
+            .Select(x => new WarenEingangData()
+            {
+                TotalMenge = (int)x.Sum(x => x.Menge ?? 0),
+                USER_Referenznummer = x.Key.USER_Referenznummer,
+                USER_Rechnungsnummer = x.Key.USER_Rechnungsnummer,
+                Belegart=x.Key.Belegart,
+                Belegkennzeichen=x.Key.Belegkennzeichen,
+                A0Name1 = x.Key.A0Name1,
+                BLNummer = x.Key.BLNummer,
+                Referenznummer = x.Key.Referenznummer,
+                USER_ETD = x.Key.USER_ETD,
+                USER_ETA = x.Key.USER_ETA,
+                USER_Spedition = x.Key.USER_Spedition
+            }).ToList();
+
+        foreach (ArtikelData dto in ListFelgenSales)
+        {
+
+            //GetCalculatedSaleForALL
+            double weightTendency = dto.Last8MonthTendency > 0.2 ? dto.Last8MonthTendency : 1;
+            if (dto.Last8MonthTendency <= 0.2) { weightTendency = 1; }
+            if (dto.Last8MonthTendency > 0.2 && dto.Last8MonthTendency < 0.5) { weightTendency = 0.5; }
+            if (dto.Last8MonthTendency > 1.5) { weightTendency = 1.5; }
+            dto.SaleProjected = new int[12];
+            for (int i = 0; i < 12; i++)
+            {
+                double maxSale = Math.Max((double)dto.List3Months[24 + i - 12], (double)dto.List3Months[24 + i]);
+                dto.SaleProjected[i] = ((int)Math.Round((int)(maxSale * (weightTendency * 2 + 1) / 3) / 10.0)) * 10;
+
+            }
+
+
+            //GetMaxSales3Years()
+            dto.Max3YearsSales = new int[12];
+            for (int i = 0; i < 12; i++)
+            {
+                double maxSale = Math.Max(
+                    (Math.Max(
+                    (double)dto.List3Months[24 + i - 24],
+                    (double)dto.List3Months[24 + i - 12])),
+                    (double)dto.List3Months[24 + i]);
+
+                dto.Max3YearsSales[i] = ((int)Math.Round((int)(maxSale) / 10.0)) * 10;
+            }
+
+
+            //LoadBackOrders()
+            StefanBackOrderDTO stef = ListBackOrder.Where(x => x.Artikelnummer == dto.Artikelnummer).FirstOrDefault();
+            if (stef != null && stef.BackOrder != null && stef.BackOrder > 0)
+            {
+                dto.BackOrder = (int)stef.BackOrder;
+            }
+
+
+            //GetTransitNumber
+            int? n = (int?)ListFelgenEingang.Where(x => x.TransItems != null && x.Artikelnummer == dto.Artikelnummer && x.Belegkennzeichen=="ELC").Sum(x => x.Menge);
+            if (n == null || n == 0)
+            {
+                dto.TransitStock = null;
+            }
+            else
+            {
+                dto.TransitStock = (int)n;
+            }
+
+
+            //Temp Orders
+            ProductionOffer temp = ListTempOrderFelgen.Where(x => x.Artikelnummer == dto.Artikelnummer).FirstOrDefault();
+            if (temp != null && temp.Menge != null)
+            {
+                dto.TempNewOrder = temp.Menge;
+            }
+
+            if (!ListTempOrderFelgen.Any(x => x.Artikelnummer == dto.Artikelnummer))
+            {
+                ProductionOffer toAdd = new ProductionOffer { Artikelnummer = dto.Artikelnummer, Artikelgruppe = "FELGEN" };
+                ListTempOrderFelgen.Add(toAdd);
+                repo.AddToTempOrder(toAdd);
+            }
+
+            //Lieferants
+            List<ArtikelLieferantDTO> tempLieferant;
+            tempLieferant = ArtikelLieferants
+                .Where(x => x.Artikelnummer == dto.Artikelnummer)
+                .ToList();
+
+            tempLieferant = tempLieferant.OrderByDescending(x => x.Einzelpreis).ToList();
+            dto.Lieferants = tempLieferant;
+
+
+
+            //Load With Fracht
+
+
+            if (dto.USER_Radius == "13") { dto.ArtikelFracht = cv.VKLagerFT13; }
+            if (dto.USER_Radius == "14") { dto.ArtikelFracht = cv.VKLagerFT14; }
+            if (dto.USER_Radius == "15") { dto.ArtikelFracht = cv.VKLagerFT15; }
+            if (dto.USER_Radius == "16") { dto.ArtikelFracht = cv.VKLagerFT16; }
+            if (dto.USER_Radius == "17") { dto.ArtikelFracht = cv.VKLagerFT17; }
+            if (dto.USER_Radius == "18") { dto.ArtikelFracht = cv.VKLagerFT18; }
+            if (dto.USER_Radius == "19") { dto.ArtikelFracht = cv.VKLagerFT19; }
+            if (dto.USER_Radius == "20") { dto.ArtikelFracht = cv.VKLagerFT20; }
+            if (dto.USER_Radius == "21") { dto.ArtikelFracht = cv.VKLagerFT21; }
+            if (dto.USER_Radius == "22") { dto.ArtikelFracht = cv.VKLagerFT22; }
+
+
+            //Load With Real Ek Advanced
+            CalculateRealEKAdv(dto);
+
+
+            //Load With Cost
+            DoCostCalculation(dto);
+        }
+
+        await repo.SaveChanges();
+    }
+    private async Task getWindowsUser()
+    {
+        var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        username = user.Identity.Name;
+        Log.Warning($"EntryXXX {DateTime.Now} {username}");
+    }
+    private void isAuthenticated()
+    {
+        if (KTUsers.Where(k => k.Name1.Equals("Produktion"))
+           .Select(k => k.Enumerator.ToLower())
+           .ToList()
+           .Contains(username.ToLower()))
+        {
+            isAuthenticatedBool = true;
+            isEkAuthenticated = true;
+        }
+
+        if (KTUsers.Where(k => k.Name1.Equals("Vertrieb"))
+           .Select(k => k.Enumerator.ToLower())
+           .ToList()
+           .Contains(username.ToLower()))
+        {
+            isAuthenticatedBool = true;
+        }
+
+
+    }
+    private void ResetList()
+    {
+        FilterDTO.Pattern = null;
+        FilterDTO.Size = null;
+        FilterDTO.Lieferant = null;
+        FilterDTO.Breite = null;
+        FilterDTO.ET = null;
+        FilterDTO.Farbekurz = null;
+        FilterDTO.LK1 = null;
+        FilterDTO.LK2 = null;
+
+        FilteredData = null;
+
+        selectedRow = ListFelgenSales.FirstOrDefault();
+    }
+    private void FilterList()
+    {
+        FilteredData = null;
+
+
+        //PATTERN
+        if (FilterDTO.Pattern != "Select" && FilterDTO.Pattern != null)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.Where(x => x.USER_ArtikelName == FilterDTO.Pattern).ToList();
+            }
+            else
+            {
+                FilteredData = FilteredData.Where(x => x.USER_ArtikelName == FilterDTO.Pattern).ToList();
+            }
+
+        }
+        //Lieferant
+        if (FilterDTO.Lieferant != "Select" && FilterDTO.Lieferant != null)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.Where(x => x.Lieferants.Any(x => x.Lieferant == FilterDTO.Lieferant)).ToList();
+            }
+            else
+            {
+                FilteredData = FilteredData.Where(x => x.Lieferants.Any(x => x.Lieferant == FilterDTO.Lieferant)).ToList();
+            }
+
+        }
+
+        //KEY
+        if (FilterDTO.Size != "" && FilterDTO.Size != null)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.Where(x => x.Artikelnummer.Contains(FilterDTO.Size)).ToList();
+            }
+            else
+            {
+                FilteredData = FilteredData.Where(x => x.Artikelnummer.Contains(FilterDTO.Size)).ToList();
+            }
+        }
+
+        //ZOLL
+        if (FilterDTO.Zoll != "" && FilterDTO.Zoll != null)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.Where(x => x.USER_Radius == FilterDTO.Zoll).ToList();
+            }
+            else
+            {
+                FilteredData = FilteredData.Where(x => x.USER_Radius == FilterDTO.Zoll).ToList();
+            }
+        }
+
+
+        //BREITE
+        if (FilterDTO.Breite != "" && FilterDTO.Breite != null)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.Where(x => x.USER_Breite == FilterDTO.Breite).ToList();
+            }
+            else
+            {
+                FilteredData = FilteredData.Where(x => x.USER_Breite == FilterDTO.Breite).ToList();
+            }
+        }
+
+
+        //LK
+        if (FilterDTO.LK1 != "" && FilterDTO.LK1 != null)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.Where(x => x.USER_LK1 == FilterDTO.LK1).ToList();
+            }
+            else
+            {
+                FilteredData = FilteredData.Where(x => x.USER_LK1 == FilterDTO.LK1).ToList();
+            }
+        }
+
+
+        //ET
+        if (FilterDTO.ET != "" && FilterDTO.ET != null)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.Where(x => x.USER_ET == FilterDTO.ET).ToList();
+            }
+            else
+            {
+                FilteredData = FilteredData.Where(x => x.USER_ET == FilterDTO.ET).ToList();
+            }
+        }
+
+
+        //FARBEKURZ
+        if (FilterDTO.Farbekurz != "" && FilterDTO.Farbekurz != null)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.Where(x => x.USER_Farbekurz == FilterDTO.Farbekurz).ToList();
+            }
+            else
+            {
+                FilteredData = FilteredData.Where(x => x.USER_Farbekurz == FilterDTO.Farbekurz).ToList();
+            }
+        }
+
+
+        showFilterModal = false;
+
+    }
+    private void DoSorting(int param)
+    {
+
+        if (param == 1)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.TransitStock).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.TransitStock).ToList();
+            }
+
+        }
+
+
+        if (param == 2)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.Bestand).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.Bestand).ToList();
+            }
+
+        }
+
+        if (param == 3)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.ExportWarenEingangRate).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.ExportWarenEingangRate).ToList();
+            }
+
+        }
+
+
+        if (param == 4)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.BackOrder).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.BackOrder).ToList();
+            }
+
+        }
+
+        if (param == 5)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.FactoryStock).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.FactoryStock).ToList();
+            }
+
+        }
+        if (param == 6)
+        {
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.NewProductionOffer).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.NewProductionOffer).ToList();
+            }
+
+        }
+        if (param == 7)
+        {
+            LoadArtikelsWithTempOrder();
+
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.TempNewOrder).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.TempNewOrder).ToList();
+            }
+
+        }
+        if (param == 8)
+        {
+
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.Last8MonthTendencytoShow).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.Last8MonthTendencytoShow).ToList();
+            }
+
+        }
+        if (param == 9)
+        {
+
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderBy(x => x.StockPercent).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderBy(x => x.StockPercent).ToList();
+            }
+
+        }
+
+        if (param == 10)
+        {
+
+            if (FilteredData == null)
+            {
+                FilteredData = ListFelgenSales.OrderByDescending(x => x.ContainerDeCostRate).ToList();
+
+            }
+            else
+            {
+                FilteredData = FilteredData.OrderByDescending(x => x.ContainerDeCostRate).ToList();
+            }
+
+        }
+
+    }
+    private void LoadArtikelsWithTempOrder()
+    {
+        foreach (ProductionOffer p in ListTempOrderFelgen)
+        {
+            ArtikelData dataToUpdate = ListFelgenSales.FirstOrDefault(x => x.Artikelnummer == p.Artikelnummer);
+            if (dataToUpdate != null && p.Menge != null)
+            {
+                dataToUpdate.TempNewOrder = p.Menge;
+            }
+        }
+    }
+    private string GetQtyPercent(ArtikelData dto)
+    {
+        if (FilteredData == null)
+        {
+            decimal total = ListFelgenSales.Where(x => x.USER_ArtikelName == dto.USER_ArtikelName).Sum(x => x.Sum1 ?? 0);
+            if (total != 0)
+            {
+                return ((dto.Sum1 ?? 0) / total).ToString("0.0%");
+            }
+            return "";
+        }
+        else
+        {
+            decimal total = FilteredData.Sum(x => x.Sum1 ?? 0);
+            if (total != 0)
+            {
+                return ((dto.Sum1 ?? 0) / total).ToString("0.0%");
+            }
+            return "";
+        }
+
+
+    }
+    private string GetBetragPercent(ArtikelData dto)
+    {
+        if (FilteredData == null)
+        {
+            decimal total = ListFelgenSales.Where(x => x.USER_ArtikelName == dto.USER_ArtikelName).Sum(x => x.Betrag1) ?? 0;
+            if (total != 0)
+            {
+                return ((dto.Betrag1 ?? 0) / total).ToString("0.0%");
+            }
+            return "";
+        }
+        else
+        {
+            decimal total = FilteredData.Sum(x => x.Betrag1) ?? 0;
+            if (total != 0)
+            {
+                return ((dto.Betrag1 ?? 0) / total).ToString("0.0%");
+            }
+            return "";
+        }
+
+    }
+    private void ShowFactory()
+    {
+        showFactoryDisable = true;
+        try
+        {
+            FactoryStocks = excelService.procExcel("FELGEN");
+
+            foreach (ArtikelData dto in ListFelgenSales)
+            {
+                FactoryStockDTO temp = FactoryStocks.Where(x => x.Code == dto.Artikelnummer).FirstOrDefault();
+                if (temp != null && temp.Menge != 0)
+                {
+                    dto.FactoryStock = (int)temp.Menge;
+
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+
+        showFactoryBol = true;
+
+    }
+    private void LoadMonthNames()
+    {
+
+        monthNames.Add(0, "Jan");
+        monthNames.Add(1, "Febr");
+        monthNames.Add(2, "Mar");
+        monthNames.Add(3, "Apr");
+        monthNames.Add(4, "May");
+        monthNames.Add(5, "June");
+        monthNames.Add(6, "July");
+        monthNames.Add(7, "Aug");
+        monthNames.Add(8, "Sept");
+        monthNames.Add(9, "Oct");
+        monthNames.Add(10, "Nov");
+        monthNames.Add(11, "Dec");
+
+    }
+    private void OnClickHandler(ArtikelData artikel)
+    {
+        selectedRow = artikel;
+
+    }
+    private string CalculateLast8MonthPublic(ArtikelData dto)
+    {
+        if (dto.Last8MonthTendencytoShow != 0)
+        {
+            return dto.Last8MonthTendencytoShow.ToString("0%");
+        }
+        else
+        {
+            return null;
+        }
+
+    }
+    private int? CalculateNewProduction(ArtikelData dto)
+    {
+        dto.NewProductionOffer = null;
+
+        int saleUntilContainerArrival = GetProjectedSaleUntilArrival(dto);
+        saleUntilContainerArrival = saleUntilContainerArrival - (int)(saleUntilContainerArrival * dto.ExportWarenEingangRate);
+
+        int saleUntilSelectedMonth = GetProjectedSale(dto);
+        saleUntilSelectedMonth = saleUntilSelectedMonth - (int)(saleUntilSelectedMonth * dto.ExportWarenEingangRate);
+
+        int totalAvailableStock = (int)(dto.Bestand ?? 0) + (dto.TransitStock ?? 0);
+
+        int remainingStockAtContainerArrival;
+
+
+        if (saleUntilContainerArrival >= totalAvailableStock)
+        {
+            remainingStockAtContainerArrival = 0;
+        }
+        else
+        {
+            remainingStockAtContainerArrival = totalAvailableStock - saleUntilContainerArrival;
+
+        }
+
+        int a = saleUntilSelectedMonth - saleUntilContainerArrival - remainingStockAtContainerArrival - (dto.BackOrder ?? 0);
+
+        if (a < 1)
+        {
+            return null;
+        }
+        else
+        {
+            dto.NewProductionOffer = ((int)Math.Round(a / 10.0)) * 10;
+            return ((int)Math.Round(a / 10.0)) * 10;
+        }
+
+    }
+    private int GetProjectedSale(ArtikelData dto)
+    {
+        dto.ProjectedSaleUntilTarget = null;
+        int totalNeed = 0;
+        totalNeed = totalNeed + dto.Max3YearsSales[currentMonth - 1] - (int)dto.List3Months[24 + currentMonth - 1];
+        int count;
+        if (currentMonth > Int32.Parse(FilterDTO.MonthNumber))
+        {
+            count = 12 - currentMonth + Int32.Parse(FilterDTO.MonthNumber);
+
+        }
+        else
+        {
+            count = Int32.Parse(FilterDTO.MonthNumber) - currentMonth;
+        }
+
+
+        for (int i = 0; i < count; i++)
+        {
+            totalNeed = totalNeed + dto.Max3YearsSales[(currentMonth + i) % 12];
+
+        }
+
+        dto.ProjectedSaleUntilTarget = ((int)Math.Round((int)(totalNeed) / 10.0)) * 10;
+        return ((int)Math.Round((int)(totalNeed) / 10.0)) * 10;
+
+    }
+    private int GetProjectedSaleUntilArrival(ArtikelData dto)
+    {
+        dto.ProjectedSaleUntilContainer = null;
+        int totalNeed = 0;
+        totalNeed = totalNeed + dto.Max3YearsSales[currentMonth - 1] - (int)dto.List3Months[24 + currentMonth - 1];
+        int count;
+        if (currentMonth > Int32.Parse(FilterDTO.BeginMonth))
+        {
+            count = 12 - currentMonth + Int32.Parse(FilterDTO.BeginMonth);
+
+        }
+        else
+        {
+            count = Int32.Parse(FilterDTO.BeginMonth) - currentMonth;
+        }
+
+
+        for (int i = 0; i < count; i++)
+        {
+            totalNeed = totalNeed + dto.Max3YearsSales[(currentMonth + i) % 12];
+
+        }
+
+        dto.ProjectedSaleUntilContainer = ((int)Math.Round((int)(totalNeed) / 10.0)) * 10;
+        return ((int)Math.Round((int)(totalNeed) / 10.0)) * 10;
+
+    }
+    private int? GetTotalProduction()
+    {
+        if (FilteredData == null)
+        {
+            int sumProduction = ListFelgenSales.Sum(x => CalculateNewProduction(x) ?? 0);
+            return sumProduction;
+        }
+        else
+        {
+            int sumProduction = FilteredData.Sum(x => CalculateNewProduction(x) ?? 0);
+            return sumProduction;
+        }
+
+    }
+    private int? GetTotalTransit()
+    {
+        if (FilteredData == null)
+        {
+            int sumTransit = ListFelgenSales.Sum(x => x.TransitStock ?? 0);
+            return sumTransit;
+        }
+        else
+        {
+            int sumTransit = FilteredData.Sum(x => x.TransitStock ?? 0);
+            return sumTransit;
+        }
+
+    }
+    private int GetTotalBackOrder()
+    {
+        if (FilteredData == null)
+        {
+            int sumBackOrder = ListFelgenSales.Sum(x => x.BackOrder ?? 0);
+            return sumBackOrder;
+        }
+        else
+        {
+            int sumBackOrder = FilteredData.Sum(x => x.BackOrder ?? 0);
+            return sumBackOrder;
+        }
+    }
+    private int GetTotalStock()
+    {
+        if (FilteredData == null)
+        {
+            int sumStock = (int)ListFelgenSales.Sum(x => x.Bestand ?? 0);
+            return sumStock;
+        }
+        else
+        {
+            int sumStock = (int)FilteredData.Sum(x => x.Bestand ?? 0);
+            return sumStock;
+        }
+    }
+    private int GetTotalSum0()
+    {
+        if (FilteredData == null)
+        {
+            int sumStock = (int)ListFelgenSales.Sum(x => x.Sum0 ?? 0);
+            return sumStock;
+        }
+        else
+        {
+            int sumStock = (int)FilteredData.Sum(x => x.Sum0 ?? 0);
+            return sumStock;
+        }
+    }
+    private int GetTotalSum1()
+    {
+        if (FilteredData == null)
+        {
+            int sumStock = (int)ListFelgenSales.Sum(x => x.Sum1 ?? 0);
+            return sumStock;
+        }
+        else
+        {
+            int sumStock = (int)FilteredData.Sum(x => x.Sum1 ?? 0);
+            return sumStock;
+        }
+    }
+    private int GetTotalSum2()
+    {
+        if (FilteredData == null)
+        {
+            int sumStock = (int)ListFelgenSales.Sum(x => x.Sum2 ?? 0);
+            return sumStock;
+        }
+        else
+        {
+            int sumStock = (int)FilteredData.Sum(x => x.Sum2 ?? 0);
+            return sumStock;
+        }
+    }
+    private void OpenChartView()
+    {
+
+        if (FilterDTO.Pattern != "Select" && FilterDTO.Pattern != null)
+        {
+            _OpenChartView = true;
+        }
+    }
+    private void CloseChart()
+    {
+        _OpenChartView = false;
+    }
+    private string GetUnitPrice0(ArtikelData dto)
+    {
+        if ((dto.ConWar0 + dto.ConWarTS0) != 0)
+        {
+            return String.Format("{0,0:N2}", (dto.ConWarBetrag0 + dto.ConWarTSBetrag0) / (dto.ConWar0 + dto.ConWarTS0));
+        }
+        else
+        {
+            return "-";
+        }
+    }
+    private string GetUnitPrice1(ArtikelData dto)
+    {
+        if ((dto.ConWar1 + dto.ConWarTS1) != 0)
+        {
+            return String.Format("{0,0:N2}", (dto.ConWarBetrag1 + dto.ConWarTSBetrag1) / (dto.ConWar1 + dto.ConWarTS1));
+        }
+        else
+        {
+            return "-";
+        }
+    }
+    private string GetUnitPrice2(ArtikelData dto)
+    {
+        if ((dto.ConWar2 + dto.ConWarTS2) != 0)
+        {
+            return String.Format("{0,0:N2}", (dto.ConWarBetrag2 + dto.ConWarTSBetrag2) / (dto.ConWar2 + dto.ConWarTS2));
+        }
+        else
+        {
+            return "-";
+        }
+    }
+    private void GetUmsatzTop(ChangeEventArgs e)
+    {
+        if ((bool)e.Value)
+        {
+            FilteredData = ListFelgenSales.OrderByDescending(x => x.Betrag1).Take(20).ToList();
+
+            decimal bigUmsatz = FilteredData.Sum(x => x.Betrag1 ?? 0);
+            decimal totalUmsatz = ListFelgenSales.Sum(x => x.Betrag1 ?? 0);
+
+
+            message = String.Format("{0,0:N2}", (bigUmsatz / totalUmsatz) * 100) + $"% of total Felgen Umsatz (previous year)  {String.Format("{0,0:N0}", bigUmsatz)} € ";
+        }
+        else
+        {
+            FilteredData = null;
+            message = null;
+        }
+    }
+    private decimal? DoCostCalculation(ArtikelData dto)
+    {
+        decimal basePrice = dto.RealEKAdvanced ?? 0;
+        decimal costPrice = basePrice;
+        if (basePrice == 0) { return null; }
+
+        int felgenContainerStück = 0;
+        if (dto.USER_Radius == "16") { felgenContainerStück = cv.Container16; }
+        if (dto.USER_Radius == "17") { felgenContainerStück = cv.Container17; }
+        if (dto.USER_Radius == "18") { felgenContainerStück = cv.Container18; }
+        if (dto.USER_Radius == "19") { felgenContainerStück = cv.Container19; }
+        if (dto.USER_Radius == "20") { felgenContainerStück = cv.Container20; }
+        if (dto.USER_Radius == "21") { felgenContainerStück = cv.Container21; }
+        if (dto.USER_Radius == "22") { felgenContainerStück = cv.Container22; }
+
+        if (felgenContainerStück == 0) { return null; }
+
+        LieferantZoll zollData = LieferantZolls.Where(x => x.Lieferant == dto.Lieferant).FirstOrDefault();
+
+        //See Fracht
+        costPrice = basePrice + ((dto.AverageSeaFracht ?? 0) / felgenContainerStück);
+
+        //Zoll
+        costPrice = costPrice + (basePrice * (dto.AverageZoll ?? 0) / 100);
+
+        //Anti Dumping
+        costPrice = costPrice + (basePrice * (dto.AverageAntiDumping ?? 0) / 100);
+
+        //Mould Investment
+        costPrice = costPrice + cv.MouldInvestment;
+
+        //EURO
+        costPrice = costPrice / cv.USDEUR;
+
+        //Nachlauf
+        costPrice = costPrice + (cv.Nachlauf / felgenContainerStück);
+
+        //Demurage
+        costPrice = costPrice + cv.Demurage;
+
+        //TUV ABE ZER
+        costPrice = costPrice + cv.TuvAbeZer;
+
+        //Deckel
+        costPrice = costPrice + cv.Deckel;
+
+        //Zubehör Paket
+        costPrice = costPrice + cv.ZubehorPaket;
+
+        //Vertrieb Kosten
+        costPrice = costPrice + cv.VertriebKosten;
+
+
+        //Lager go in go out
+        decimal Lagerinoutcost = 0;
+        string radius = dto.USER_Radius;
+        if (radius == "13") { Lagerinoutcost = cv.LagerGoInOut13; }
+        if (radius == "14") { Lagerinoutcost = cv.LagerGoInOut14; }
+        if (radius == "15") { Lagerinoutcost = cv.LagerGoInOut15; }
+        if (radius == "16") { Lagerinoutcost = cv.LagerGoInOut16; }
+        if (radius == "17") { Lagerinoutcost = cv.LagerGoInOut17; }
+        if (radius == "18") { Lagerinoutcost = cv.LagerGoInOut18; }
+        if (radius == "19") { Lagerinoutcost = cv.LagerGoInOut19; }
+        if (radius == "20") { Lagerinoutcost = cv.LagerGoInOut20; }
+        if (radius == "21") { Lagerinoutcost = cv.LagerGoInOut21; }
+        if (radius == "22") { Lagerinoutcost = cv.LagerGoInOut22; }
+
+        costPrice = costPrice + Lagerinoutcost;
+
+
+        //Versand Lager FT
+
+        decimal LagerFtCost = 0;
+
+        if (radius == "13") { LagerFtCost = cv.VKLagerFT13; }
+        if (radius == "14") { LagerFtCost = cv.VKLagerFT14; }
+        if (radius == "15") { LagerFtCost = cv.VKLagerFT15; }
+        if (radius == "16") { LagerFtCost = cv.VKLagerFT16; }
+        if (radius == "17") { LagerFtCost = cv.VKLagerFT17; }
+        if (radius == "18") { LagerFtCost = cv.VKLagerFT18; }
+        if (radius == "19") { LagerFtCost = cv.VKLagerFT19; }
+        if (radius == "20") { LagerFtCost = cv.VKLagerFT20; }
+        if (radius == "21") { LagerFtCost = cv.VKLagerFT21; }
+        if (radius == "22") { LagerFtCost = cv.VKLagerFT22; }
+
+        //costPrice = costPrice + LagerFtCost;
+
+        //Finanzierung
+        costPrice = costPrice + (costPrice * cv.Finanzierung / 100);
+
+        //Wrapping
+        costPrice = costPrice + cv.Wrapping;
+
+        //Versand Verpackung
+        costPrice = costPrice + cv.VerVerpMat;
+
+        //Reklamation
+        //costPrice = costPrice + (costPrice * cv.Reklamation / 100);
+        costPrice = costPrice + cv.Reklamation;
+
+        //LC Bank Kosten
+        costPrice = costPrice + (costPrice * cv.LCBankKosten / 100);
+
+        //Profit
+
+        decimal profitPercentage = 0;
+
+        if (radius == "13") { profitPercentage = cv.ProfitPer13 ?? 0; }
+        if (radius == "14") { profitPercentage = cv.ProfitPer14 ?? 0; }
+        if (radius == "15") { profitPercentage = cv.ProfitPer15 ?? 0; }
+        if (radius == "16") { profitPercentage = cv.ProfitPer16 ?? 0; }
+        if (radius == "17") { profitPercentage = cv.ProfitPer17 ?? 0; }
+        if (radius == "18") { profitPercentage = cv.ProfitPer18 ?? 0; }
+        if (radius == "19") { profitPercentage = cv.ProfitPer19 ?? 0; }
+        if (radius == "20") { profitPercentage = cv.ProfitPer20 ?? 0; }
+        if (radius == "21") { profitPercentage = cv.ProfitPer21 ?? 0; }
+        if (radius == "22") { profitPercentage = cv.ProfitPer22 ?? 0; }
+
+        dto.ArtikelProfit = costPrice * profitPercentage / 100;
+        costPrice = costPrice + (costPrice * profitPercentage / 100);
+
+        dto.ArtikelCost = costPrice;
+
+
+        return costPrice;
+
+    }
+    private void OpenCostTable(ArtikelData dto)
+    {
+        if (dto.MaxEK != null && dto.MaxEK != 0 && isEkAuthenticated)
+        {
+            ArtikelToCostTable = dto;
+            message = null;
+            FilterDTO.isChart = false;
+            _OpenChartView = false;
+            showCostTable = true;
+        }
+        else
+        {
+            showCostTable = false;
+        }
+    }
+    private void CloseCostForm()
+    {
+        configureCost = false;
+
+    }
+    private void OpenCostForm()
+    {
+        configureCost = true;
+    }
+    private void CloseCostDialog()
+    {
+        showCostTable = false;
+    }
+    private void OpenTransitInfo(ArtikelData dto)
+    {
+        if (dto.TransitStock > 0)
+        {
+            TransitEingangs = ListFelgenEingang.Where(x => x.TransItems != null && x.Artikelnummer == dto.Artikelnummer).ToList();
+            _OpenTransitModal = true;
+        }
+
+
+    }
+    private void CloseTransitModal()
+    {
+        _OpenTransitModal = false;
+    }
+    private void CloseLastEKModal()
+    {
+        showLastEKModal = false;
+    }
+    private void OpenLastEKDetails(ArtikelData dto)
+    {
+        LastEKEingangList = ListFelgenEingang.Where(x => x.Artikelnummer == dto.Artikelnummer).ToList();
+        StocktoEkPrice = dto.Bestand ?? 0;
+
+        showLastEKModal = true;
+    }
+    private string GetLastEk(ArtikelData dto)
+    {
+        WarenEingangData temp = ListFelgenEingang.Where(x => x.Artikelnummer == dto.Artikelnummer)
+            .OrderByDescending(x => x.Belegdatum)
+            .Take(1)
+            .FirstOrDefault();
+
+        if (temp != null && temp.Einzelpreis != null)
+        {
+            return String.Format("{0,0:N1}", (decimal)temp.Einzelpreis);
+        }
+        else
+        {
+            return null;
+        }
+    }
+    private void CloseButtonGroup()
+    {
+        showButtonGroup = false;
+    }
+    private void OpenFeatures()
+    {
+        showButtonGroup = true;
+    }
+    private void OpenEingangUmsatz(ArtikelData dto)
+    {
+        ArtikelToEingangChart = dto;
+        showEingangUmsatz = true;
+
+    }
+    private void CloseEingangUmsatz()
+    {
+        showEingangUmsatz = false;
+    }
+    private void ExportExcel()
+    {
+        LoadArtikelsWithTempOrder();
+
+        showButtonGroup = false;
+        showProgressDialog = true;
+
+
+        exportService.exportToExcel(ListFelgenSales, ListFelgenEingang, "FELGEN",isEkAuthenticated);
+
+        MyNavigationManager.NavigateTo("api/Dowload", true);
+
+        showProgressDialog = false;
+    }
+    private void closeFilterDialog()
+    {
+        showFilterModal = false;
+    }
+    private void OpenFilterDialog()
+    {
+        showFilterModal = true;
+    }
+    private decimal? CalculateRealEKAdv(ArtikelData dto)
+    {
+        if ((dto.Bestand == null || dto.Bestand == 0) && (dto.BackOrder==null || dto.BackOrder==0)) { return null; }
+
+
+        List<LieferantMenge> LifMenge = new List<LieferantMenge>();
+
+        decimal MengeS = 0M;
+        decimal totalMoney = 0M;
+
+        decimal MengeSBestand = 0M;
+        decimal totalMoneyBestand = 0M;
+
+        //Back Order
+        List<StefanBackOrder> ListBackOrdersByArtikel = ListBackOrderDetails.Where(x => x.Artikelnummer == dto.Artikelnummer).ToList();
+        foreach(StefanBackOrder sto in ListBackOrdersByArtikel)
+        {
+            if (sto.BackOrder > 0)
+            {
+                MengeS = MengeS + (sto.BackOrder ?? 0);
+                LieferantZoll liTemp = LieferantZolls.FirstOrDefault(x => x.Lieferant == sto.Lieferant);
+                if(liTemp!=null && liTemp.Currency == "EUR")
+                {
+                    totalMoney = totalMoney + (sto.BackOrder ?? 0) * ((sto.MaxPriceInBestellung ?? 0) * EURUSD);
+                }
+                else
+                {
+                    totalMoney = totalMoney + (sto.BackOrder ?? 0) * (sto.MaxPriceInBestellung ?? 0);
+                }
+
+
+                LieferantMenge temp = new LieferantMenge();
+                temp.Lieferant = sto.Lieferant;
+                temp.Menge = sto.BackOrder ?? 0;
+                LifMenge.Add(temp);
+            }
+        }
+
+        List<WarenEingangData> ListEingang = ListFelgenEingang.Where(x => x.Artikelnummer == dto.Artikelnummer).ToList();
+
+        foreach(WarenEingangData ts in ListEingang)
+        {
+            if (ts.TransItems != null)
+            {
+                MengeS = MengeS + (ts.Menge ?? 0);
+
+                LieferantZoll liTemp = LieferantZolls.FirstOrDefault(x => x.Lieferant == ts.A0Empfaenger);
+                if (liTemp != null && liTemp.Currency == "EUR")
+                {
+                    totalMoney = totalMoney + (ts.Menge ?? 0) * ((ts.Einzelpreis ?? 0)*EURUSD);
+                }
+                else
+                {
+                    totalMoney = totalMoney + (ts.Menge ?? 0) * (ts.Einzelpreis ?? 0);
+                }
+
+
+                LieferantMenge temp = new LieferantMenge();
+                temp.Lieferant = ts.A0Empfaenger;
+                temp.Menge = ts.Menge ?? 0;
+                LifMenge.Add(temp);
+            }
+        }
+
+        //Stock
+        foreach (WarenEingangData wd in ListEingang)
+        {
+            if (wd.TransItems == null)
+            {
+                if (MengeSBestand + (wd.Menge ?? 0) <= dto.Bestand)
+                {
+                    LieferantZoll liTemp = LieferantZolls.FirstOrDefault(x => x.Lieferant == wd.A0Empfaenger);
+                    if (liTemp != null && liTemp.Currency == "EUR")
+                    {
+                        totalMoneyBestand = totalMoneyBestand + (wd.Menge ?? 0) * ((wd.Einzelpreis ?? 0)*EURUSD);
+                    }
+                    else
+                    {
+                        totalMoneyBestand = totalMoneyBestand + (wd.Menge ?? 0) * (wd.Einzelpreis ?? 0);
+                    }
+
+
+                    MengeSBestand = MengeSBestand + (wd.Menge ?? 0);
+
+                    LieferantMenge temp = new LieferantMenge();
+                    temp.Lieferant = wd.A0Empfaenger;
+                    temp.Menge = wd.Menge ?? 0;
+                    LifMenge.Add(temp);
+                }
+                else if (MengeSBestand + (wd.Menge ?? 0) > dto.Bestand)
+                {
+                    decimal diff = (dto.Bestand ?? 0) - MengeSBestand;
+
+                    LieferantZoll liTemp = LieferantZolls.FirstOrDefault(x => x.Lieferant == wd.A0Empfaenger);
+                    if (liTemp != null && liTemp.Currency == "EUR")
+                    {
+                        totalMoneyBestand = totalMoneyBestand + ((wd.Einzelpreis ?? 0)*EURUSD) * diff;
+                    }
+                    else
+                    {
+                        totalMoneyBestand = totalMoneyBestand + (wd.Einzelpreis ?? 0) * diff;
+                    }
+
+
+                    MengeSBestand = MengeSBestand + diff;
+
+                    LieferantMenge temp = new LieferantMenge();
+                    temp.Lieferant = wd.A0Empfaenger;
+                    temp.Menge = diff;
+                    LifMenge.Add(temp);
+                }
+
+            }
+
+            if (MengeSBestand == dto.Bestand) { break; }
+        }
+
+
+
+        if (MengeSBestand == dto.Bestand)
+        {
+            totalMoney = totalMoney + totalMoneyBestand;
+            MengeS = MengeS + MengeSBestand;
+            dto.RealEK = totalMoney / MengeS;
+
+
+            decimal totalSeeFracht = 0M;
+            decimal totalZoll = 0M;
+            decimal totalAntiDumping = 0M;
+            decimal totalMenge = 0M;
+
+            foreach (LieferantMenge lm in LifMenge)
+            {
+                LieferantZoll temp = LieferantZolls.FirstOrDefault(x => x.Lieferant == lm.Lieferant);
+                if (temp != null)
+                {
+                    totalSeeFracht = totalSeeFracht + lm.Menge * (temp.SeeFracht ?? 0);
+                    totalZoll = totalZoll + lm.Menge * temp.Zoll;
+                    totalAntiDumping = totalAntiDumping + lm.Menge * temp.AntiDumping;
+                    totalMenge = totalMenge + lm.Menge;
+                }
+
+            }
+            if (totalMenge != 0)
+            {
+                dto.AverageSeaFracht = totalSeeFracht / totalMenge;
+                dto.AverageZoll = totalZoll / totalMenge;
+                dto.AverageAntiDumping = totalAntiDumping / totalMenge;
+            }
+
+            dto.RealEKAdvanced = totalMoney / MengeS;
+            return totalMoney / MengeS;
+
+
+        }
+        else
+        {
+
+            return null;
+        }
+
+
+
+    }
+    private async Task AnchorOnClickAsync()
+    {
+        if (!string.IsNullOrEmpty("firstrow"))
+        {
+            // If the target ID has been specified, we know this is an anchor link that we need to scroll
+            // to, so we call the JavaScript method to take care of this for us.
+            await JSRuntime.InvokeVoidAsync(
+                "scrollIntoView",
+                "firstrow"
+            );
+        }
+    }
+    private async Task SaveTempOrder()
+    {
+        await repo.SaveChanges();
+    }
+    private async Task ResetTempOrders()
+    {
+        foreach (ProductionOffer p in ListTempOrderFelgen)
+        {
+            p.Menge = null;
+        }
+
+        await SaveTempOrder();
+    }
+    private async Task ResultDeleteModal(bool result)
+    {
+        if (result)
+        {
+            await ResetTempOrders();
+            showTempDeleteModal = false;
+        }
+        else
+        {
+            showTempDeleteModal = false;
+        }
+    }
+    private void OpenTempDeleteModal()
+    {
+        showTempDeleteModal = true;
+    }
+    private void OpenBackOrderInfo(ArtikelData dto)
+    {
+        ListBackOrderToModal = ListBackOrderDetails.Where(x => x.Artikelnummer == dto.Artikelnummer).ToList();
+        _OpenBackOrderModal = true;
+    }
+    private void CloseBackOrderModal()
+    {
+        _OpenBackOrderModal = false;
+    }
+    private void OpenSeeContainers()
+    {
+        _OpenSeeContainerModal = true;
+    }
+    private void CheckInvoice()
+    {
+        _OpenCheckInvoice = true;
+    }
+    private void OpenDifferentLieferantModal(ArtikelData dto)
+    {
+        ArtikelToDifferentLiferantModal = dto;
+        _OpenDifferentLieferantModal = true;
+    }
+    class LieferantMenge
+    {
+        public string Lieferant { get; set; }
+        public decimal Menge { get; set; }
+    }
+}
+
+
+
+

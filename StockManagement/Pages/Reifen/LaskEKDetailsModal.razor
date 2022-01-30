@@ -1,0 +1,124 @@
+﻿@if (ready)
+{
+    <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger p-0"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+    <br />
+
+    <h6 class="ml-3" style="color:blue;">
+        Real EK --> @String.Format("{0,0:N2}", CalculateRealEK())
+        <span style="color:black; font-weight:normal;">    (Calculates the average unit price of last @String.Format("{0,0:N0}", Bestand) Wareneingang )</span>
+    </h6>
+
+    <div class="LastEkWrapper">
+
+        <div class="col-8" style="margin:0 auto;">
+            <table class="table table-bordered" style="font-size:85%; font-weight:bold;">
+
+                <thead>
+                    <tr style="color:red;">
+                        <th>Artikel</th>
+                        <th>Menge</th>
+                        <th>Unit Price</th>
+                        <th>Belegdatum</th>
+                        <th>Lieferant</th>
+                        <th>Referenznummer</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (WarenEingangData wd in ListEingang)
+                    {
+                        <tr>
+                            <td>@wd.Artikelnummer</td>
+                            <td>@String.Format("{0,0:N2}", wd.Menge ?? 0)</td>
+                            <td>@String.Format("{0,0:N2}", wd.Einzelpreis ?? 0)</td>
+                            <td>@GetBelegDatum(wd)</td>
+                            <td>@wd.A0Name1</td>
+                            <td>@wd.Referenznummer</td>
+                        </tr>
+                    }
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+    [Parameter]
+    public List<WarenEingangData> ListEingang { get; set; }
+
+    [Parameter]
+    public decimal? Bestand { get; set; }
+
+    private bool ready = false;
+
+    protected override void OnParametersSet()
+    {
+        ListEingang = ListEingang.OrderByDescending(x => x.Belegdatum).ToList();
+        ready = true;
+    }
+
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+
+    private string GetBelegDatum(WarenEingangData wd)
+    {
+        if (wd.Belegdatum != null)
+        {
+            return String.Format("{0:d/M/yyyy}", wd.Belegdatum);
+        }
+        else
+        {
+
+            return null;
+        }
+
+    }
+
+    private decimal CalculateRealEK()
+    {
+        if (Bestand == null || Bestand == 0) { return 0; }
+
+
+        decimal MengeS = 0M;
+        decimal totalMoney = 0M;
+
+
+        foreach (WarenEingangData wd in ListEingang)
+        {
+            if (wd.TransItems == null)
+            {
+                if (MengeS + (wd.Menge ?? 0) <= Bestand)
+                {
+                    totalMoney = totalMoney + (wd.Menge ?? 0) * (wd.Einzelpreis ?? 0);
+                    MengeS = MengeS + (wd.Menge ?? 0);
+                }
+                else if (MengeS + (wd.Menge ?? 0) > Bestand)
+                {
+                    decimal diff = (Bestand ?? 0) - MengeS;
+                    totalMoney = totalMoney + (wd.Einzelpreis ?? 0) * diff;
+                    MengeS = MengeS + diff;
+                }
+
+            }
+
+            if (MengeS == Bestand) { break; }
+        }
+
+        if (MengeS == Bestand) { return totalMoney / MengeS; }
+        else
+        {
+
+            return 0;
+        }
+
+
+    }
+}

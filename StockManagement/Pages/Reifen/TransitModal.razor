@@ -1,0 +1,97 @@
+﻿
+@if (ready)
+{
+    <!-- The Modal -->
+    <div class="modaltransit">
+
+        <!-- Modal content -->
+        <div class="modal-contenttransit">
+            <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Favorite" /></button></div>
+
+            <div class="m-5">
+                <table class="table infotable">
+
+                    <thead>
+                        <tr>
+                            <th>Artikel</th>
+                            <th>Menge</th>
+                            <th>Referenznummer</th>
+                            <th>ETD</th>
+                            <th>ETA</th>
+                            <th>Lieferant</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (WarenEingangData wd in ListTransit)
+                        {
+                            <tr>
+                                <td>@wd.Artikelnummer</td>
+                                <td>@String.Format("{0,0:N0}",wd.Menge ?? 0)</td>
+                                <td>@wd.Referenznummer</td>
+                                <td>@GetETD(wd)</td>
+                                <td>@GetETA(wd)</td>
+                                <td>@wd.Lieferant</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+
+        </div>
+
+    </div>
+
+}
+
+
+@code {
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+    [Parameter]
+    public List<WarenEingangData> ListTransit { get; set; }
+    private bool ready = false;
+
+
+    protected override void OnParametersSet()
+    {
+        ready = true;
+    }
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+
+    private string GetETA(WarenEingangData wd)
+    {
+        if (wd.USER_ETA != null)
+        {
+            return String.Format("{0:d/M/yyyy}", wd.USER_ETA);
+        }
+        else
+        {
+
+            return null;
+        }
+
+    }
+
+    private string GetETD(WarenEingangData wd)
+    {
+        if (wd.USER_ETD != null)
+        {
+            return String.Format("{0:d/M/yyyy}", wd.USER_ETD);
+        }
+        else
+        {
+
+            return null;
+        }
+
+    }
+
+}

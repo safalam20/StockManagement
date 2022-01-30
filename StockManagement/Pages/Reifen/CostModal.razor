@@ -1,0 +1,375 @@
+﻿@if (ready)
+{
+    <div class="topright"><button @onclick="closeDialog" type="button" class="btn btn-danger p-0"><MudIcon Icon="@Icons.Material.Filled.Close" Title="Close" /></button></div>
+    <br />
+    <br />
+    <br />
+    <table class="table table-bordered costtable" style="font-size:85%;">
+
+
+        <thead>
+
+
+            <tr style="white-space:nowrap;">
+                <th>FOB $</th>
+                <th>See Fracht $</th>
+                <th>Zoll $</th>
+                <th>Anti Dumping $</th>
+                <th>Mould Investment $</th>
+                <th>EURO</th>
+                <th>Nachlauf €</th>
+                <th>Demurage €</th>
+                <th>TUV+ABE+ZER €</th>
+                <th>Deckel €</th>
+                <th>Zubehör Paket €</th>
+                <th>Vertrieb Kosten €</th>
+                <th>GoIn GoOut €</th>
+                @*<th>Versand Lager FT €</th>*@
+                <th>Finanzierung €</th>
+                <th>Wrapping €</th>
+                <th>Versand Verpackung €</th>
+                <th>Reklamation €</th>
+                <th>LC Bank Kosten €</th>
+                <th>Profit</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr style="color:red;">
+                <td></td>
+                <td>@(String.Format("{0,0:N2}",GetSeeFrachtCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetZollCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetAntiDumpingCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetMouldInvestmentCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetAsEuro()))</td>
+                <td>@(String.Format("{0,0:N2}",GetNachlaufCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetDemurageCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetTUVABEZERCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetDeckelCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetZubehörCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetVertriebCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetLagerGoInOutCost()))</td>
+                @*<td>@(String.Format("{0,0:N2}",GetVersandKostenLagerFTCost()))</td>*@
+                <td>@(String.Format("{0,0:N2}",GetFinanzCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetWrappingCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetVerpackungMaterialCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetReklamationCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetLCbankCost()))</td>
+                <td>@(String.Format("{0,0:N2}",GetProfitCost()))</td>
+
+
+            </tr>
+
+
+            <tr>
+                <td>@(String.Format("{0,0:N2}",data.RealEKAdvanced))</td>
+                <td>@(String.Format("{0,0:N2}",baseSeeFracht))</td>
+                <td>@(String.Format("{0,0:N2}",baseZoll))</td>
+                <td>@(String.Format("{0,0:N2}",baseAntiDump))</td>
+                <td>@(String.Format("{0,0:N2}",baseMouldInvestment))</td>
+                <td>@(String.Format("{0,0:N2}",baseEuro))</td>
+                <td>@(String.Format("{0,0:N2}",baseNachlauf))</td>
+                <td>@(String.Format("{0,0:N2}",baseDemurage))</td>
+                <td>@(String.Format("{0,0:N2}",baseTUVABEZer))</td>
+                <td>@(String.Format("{0,0:N2}",baseDeckel))</td>
+                <td>@(String.Format("{0,0:N2}",baseZubehör))</td>
+                <td>@(String.Format("{0,0:N2}",baseVertriebKosten))</td>
+                <td>@(String.Format("{0,0:N2}",baseLagergoinout))</td>
+                @*<td>@(String.Format("{0,0:N2}",baseVKLagerFT))</td>*@
+                <td>@(String.Format("{0,0:N2}",baseFinanzierung))</td>
+                <td>@(String.Format("{0,0:N2}",baseWrapping))</td>
+                <td>@(String.Format("{0,0:N2}",baseVersandVerpackung))</td>
+                <td>@(String.Format("{0,0:N2}",baseReklamation))</td>
+                <td>@(String.Format("{0,0:N2}",baseLCBank))</td>
+                <td>@(String.Format("{0,0:N2}",baseProfit))</td>
+            </tr>
+
+        </tbody>
+    </table>
+
+}
+
+@code {
+    [Parameter]
+    public ArtikelData data { get; set; }
+
+    [Parameter]
+    public CostVariables cc { get; set; }
+
+    [Parameter]
+    public List<LieferantZoll> LieferantZolls { get; set; }
+
+    [Parameter]
+    public string Mode { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> CloseDialog { get; set; }
+
+    private bool ready = false;
+    private int felgenContainerStück = 800;
+
+    private decimal basePrice { get; set; }
+    private decimal baseSeeFracht { get; set; }
+    private decimal baseZoll { get; set; }
+    private decimal baseAntiDump { get; set; }
+    private decimal baseEuro { get; set; }
+    private decimal baseNachlauf { get; set; }
+    private decimal baseDemurage { get; set; }
+    private decimal baseLagergoinout { get; set; }
+    private decimal baseVKLagerFT { get; set; }
+    private decimal baseWrapping { get; set; }
+    private decimal baseVersandVerpackung { get; set; }
+    private decimal baseMouldInvestment { get; set; }
+    private decimal baseReklamation { get; set; }
+    private decimal baseTUVABEZer { get; set; }
+    private decimal baseFinanzierung { get; set; }
+    private decimal baseLCBank { get; set; }
+    private decimal baseDeckel { get; set; }
+    private decimal baseZubehör { get; set; }
+    private decimal baseVertriebKosten { get; set; }
+    private decimal baseProfit{ get; set; }
+
+    protected override void OnParametersSet()
+    {
+        basePrice = (decimal)data.RealEKAdvanced;
+
+        if (Mode == "FELGEN")
+        {
+            if (data.USER_Radius == "16") { felgenContainerStück = cc.Container16; }
+            if (data.USER_Radius == "17") { felgenContainerStück = cc.Container17; }
+            if (data.USER_Radius == "18") { felgenContainerStück = cc.Container18; }
+            if (data.USER_Radius == "19") { felgenContainerStück = cc.Container19; }
+            if (data.USER_Radius == "20") { felgenContainerStück = cc.Container20; }
+            if (data.USER_Radius == "21") { felgenContainerStück = cc.Container21; }
+            if (data.USER_Radius == "22") { felgenContainerStück = cc.Container22; }
+        }
+
+        ready = true;
+    }
+
+
+    private async Task closeDialog()
+    {
+        await CloseDialog.InvokeAsync(false);
+    }
+
+    private decimal GetSeeFrachtCost()
+    {
+        if (Mode == "REIFEN")
+        {
+            decimal cost = (data.AverageSeaFracht?? 0) / (int)data.USER_ContainerStueck;
+            baseSeeFracht = basePrice + cost;
+            return cost;
+        }
+
+        else
+        {
+            decimal cost = (data.AverageSeaFracht ?? 0) / felgenContainerStück;
+            baseSeeFracht = basePrice + cost;
+            return cost;
+        }
+
+    }
+
+    private decimal GetZollCost()
+    {
+        decimal cost = 0;
+
+        //LieferantZoll temp = LieferantZolls.Where(x => x.Lieferant == data.Lieferant).FirstOrDefault();
+        //if (temp != null)
+        //{
+        //    cost = basePrice * temp.Zoll / 100;
+        //}
+        cost = basePrice * (data.AverageZoll ?? 0) / 100;
+
+
+        baseZoll = baseSeeFracht + cost;
+        return cost;
+    }
+
+    private decimal GetAntiDumpingCost()
+    {
+        decimal cost = 0;
+
+        //LieferantZoll temp = LieferantZolls.Where(x => x.Lieferant == data.Lieferant).FirstOrDefault();
+        //if (temp != null)
+        //{
+        //    cost = basePrice * temp.AntiDumping / 100;
+        //}
+        cost = basePrice * (data.AverageAntiDumping ?? 0) / 100;
+        Trace.WriteLine(data.AverageAntiDumping);
+        baseAntiDump = baseZoll + cost;
+        return cost;
+    }
+
+
+    private decimal GetMouldInvestmentCost()
+    {
+        decimal cost = cc.MouldInvestment;
+        baseMouldInvestment = baseAntiDump + cost;
+        return cost;
+    }
+
+    private decimal GetAsEuro()
+    {
+        baseEuro = baseMouldInvestment / cc.USDEUR;
+        return baseEuro;
+    }
+
+    private decimal GetNachlaufCost()
+    {
+        if (Mode == "REIFEN")
+        {
+
+            decimal cost = cc.Nachlauf / (int)data.USER_ContainerStueck;
+            baseNachlauf = baseEuro + cost;
+            return cost;
+        }
+        else
+        {
+            decimal cost = cc.Nachlauf / felgenContainerStück;
+            baseNachlauf = baseEuro + cost;
+            return cost;
+        }
+    }
+    private decimal GetDemurageCost()
+    {
+        decimal cost = cc.Demurage;
+        baseDemurage = baseNachlauf + cost;
+        return cost;
+    }
+
+    private decimal GetTUVABEZERCost()
+    {
+        decimal cost = cc.TuvAbeZer;
+        baseTUVABEZer = baseDemurage + cost;
+        return cost;
+    }
+
+    private decimal GetDeckelCost()
+    {
+        decimal cost = cc.Deckel;
+        baseDeckel = baseTUVABEZer + cost;
+        return cost;
+    }
+
+    private decimal GetZubehörCost()
+    {
+        decimal cost = cc.ZubehorPaket;
+        baseZubehör = baseDeckel + cost;
+        return cost;
+    }
+    private decimal GetVertriebCost()
+    {
+        decimal cost = cc.VertriebKosten;
+        baseVertriebKosten = baseZubehör + cost;
+        return cost;
+    }
+
+
+    private decimal GetLagerGoInOutCost()
+    {
+        decimal cost = 0;
+        string radius = data.USER_Radius;
+
+        if (radius == "13") { cost = cc.LagerGoInOut13; }
+        if (radius == "14") { cost = cc.LagerGoInOut14; }
+        if (radius == "15") { cost = cc.LagerGoInOut15; }
+        if (radius == "16") { cost = cc.LagerGoInOut16; }
+        if (radius == "17") { cost = cc.LagerGoInOut17; }
+        if (radius == "18") { cost = cc.LagerGoInOut18; }
+        if (radius == "19") { cost = cc.LagerGoInOut19; }
+        if (radius == "20") { cost = cc.LagerGoInOut20; }
+        if (radius == "21") { cost = cc.LagerGoInOut21; }
+        if (radius == "22") { cost = cc.LagerGoInOut22; }
+
+        baseLagergoinout = baseVertriebKosten + cost;
+        return cost;
+    }
+
+
+    //private decimal GetVersandKostenLagerFTCost()
+    //{
+    //    decimal cost = 0;
+    //    string radius = data.USER_Radius;
+
+    //    if (radius == "13") { cost = cc.VKLagerFT13; }
+    //    if (radius == "14") { cost = cc.VKLagerFT14; }
+    //    if (radius == "15") { cost = cc.VKLagerFT15; }
+    //    if (radius == "16") { cost = cc.VKLagerFT16; }
+    //    if (radius == "17") { cost = cc.VKLagerFT17; }
+    //    if (radius == "18") { cost = cc.VKLagerFT18; }
+    //    if (radius == "19") { cost = cc.VKLagerFT19; }
+    //    if (radius == "20") { cost = cc.VKLagerFT20; }
+    //    if (radius == "21") { cost = cc.VKLagerFT21; }
+    //    if (radius == "22") { cost = cc.VKLagerFT22; }
+
+    //    baseVKLagerFT = baseLagergoinout + cost;
+    //    return cost;
+    //}
+
+
+    private decimal GetFinanzCost()
+    {
+        decimal cost = baseLagergoinout * cc.Finanzierung / 100;
+        baseFinanzierung = baseLagergoinout + cost;
+        return cost;
+    }
+
+
+    private decimal GetWrappingCost()
+    {
+        decimal cost = cc.Wrapping;
+        baseWrapping = baseFinanzierung + cost;
+        return cost;
+    }
+
+    private decimal GetVerpackungMaterialCost()
+    {
+        decimal cost = cc.VerVerpMat;
+        baseVersandVerpackung = baseWrapping + cost;
+        return cost;
+    }
+
+
+    private decimal GetReklamationCost()
+    {
+        //decimal cost = baseVersandVerpackung * cc.Reklamation / 100;
+        decimal cost = cc.Reklamation;
+        baseReklamation = baseVersandVerpackung + cost;
+        return cost;
+    }
+
+    private decimal GetLCbankCost()
+    {
+        decimal cost = baseReklamation * cc.LCBankKosten / 100;
+        baseLCBank = baseReklamation + cost;
+        return cost;
+    }
+
+    private decimal GetProfitCost()
+    {
+        decimal profitPercentage = 0;
+        string radius = data.USER_Radius;
+
+
+        if (radius == "13") { profitPercentage = cc.ProfitPer13 ?? 0; }
+        if (radius == "14") { profitPercentage = cc.ProfitPer14 ?? 0; }
+        if (radius == "15") { profitPercentage = cc.ProfitPer15 ?? 0; }
+        if (radius == "16") { profitPercentage = cc.ProfitPer16 ?? 0; }
+        if (radius == "17") { profitPercentage = cc.ProfitPer17 ?? 0; }
+        if (radius == "18") { profitPercentage = cc.ProfitPer18 ?? 0; }
+        if (radius == "19") { profitPercentage = cc.ProfitPer19 ?? 0; }
+        if (radius == "20") { profitPercentage = cc.ProfitPer20 ?? 0; }
+        if (radius == "21") { profitPercentage = cc.ProfitPer21 ?? 0; }
+        if (radius == "22") { profitPercentage = cc.ProfitPer22 ?? 0; }
+
+        baseProfit = baseLCBank + (baseLCBank * profitPercentage / 100);
+        decimal profit= baseLCBank * profitPercentage / 100;
+
+        return profit;
+
+
+    }
+
+}

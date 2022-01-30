@@ -1,0 +1,40 @@
+﻿@page "/"
+@page "/home"
+@inject NavigationManager NavigationManager
+
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background-image: url("back1.jpg");
+            background-color: #cccccc;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="row homebuttons">
+        <button type="button" class="btn btn-danger btn-lg m-3 px-5" @onclick="GoToFelgen">FELGEN</button>
+        <button type="button" class="btn btn-warning btn-lg m-3 px-5" @onclick="GoToReifen">REIFEN</button>
+    </div>
+
+
+
+
+</body>
+</html>
+
+@code{
+
+
+    private void GoToReifen()
+    {
+        NavigationManager.NavigateTo("reifen", false);
+    }
+    private void GoToFelgen()
+    {
+        NavigationManager.NavigateTo("felgen", false);
+    }
+
+}
